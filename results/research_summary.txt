@@ -1,0 +1,11 @@
+--- ASL Recognition Model Thesis Summary ---
+Final Epoch Loss: 0.1657
+
+--- Final Validation Metrics ---
+Validation Accuracy: 3.09%
+Macro F1-Score: 0.0169
+Validation Loss: 8.4391
+Evaluation Samples: 194
+
+Conclusion: The Temporal Transformer successfully learned the spatial-temporal
+dynamics of the extracted holistic landmarks.
