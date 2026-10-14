@@ -1,0 +1,15 @@
+version: '3.9'
+
+services:
+  api:
+    build: .
+    ports:
+      - "127.0.0.1:8000:8000"
+    environment:
+      - PYTHONPATH=src
+      - PROJECT_NAME=sign-language-recognition
+    volumes:
+      - ./configs:/app/configs:ro
+      - ./models:/app/models:ro
+      - ./results:/app/results
+    command: uvicorn sign_language.api.main:app --host 0.0.0.0 --port 8000

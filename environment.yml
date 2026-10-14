@@ -1,0 +1,26 @@
+name: sign-language-recognition
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.11
+  - pip
+  - numpy
+  - pandas
+  - opencv
+  - scikit-learn
+  - matplotlib
+  - pyyaml
+  - pytest
+  - pip:
+      - torch
+      - torchvision
+      - mediapipe
+      - fastapi
+      - uvicorn
+      - pydantic
+      - pydantic-settings
+      - mlflow
+      - tensorboard
+      - tqdm
+      - python-dotenv
