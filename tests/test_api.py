@@ -214,3 +214,44 @@ def test_offline_online_preprocessing_parity(test_predictor: RealTimePredictor) 
     assert mask_pipe.shape == (test_predictor.sequence_length, test_predictor.input_dim)
     assert np.all(np.isfinite(feat_pipe))
     assert np.all(np.isin(mask_pipe, [0.0, 1.0]))
+
+
+def test_single_forward_pass_per_predict_request(monkeypatch: pytest.MonkeyPatch, test_predictor: RealTimePredictor) -> None:
+    """Regression test ensuring exactly ONE model forward pass is executed per /predict request."""
+    call_count = 0
+    orig_forward = test_predictor.model.forward
+
+    def counting_forward(*args, **kwargs):
+        nonlocal call_count
+        call_count += 1
+        return orig_forward(*args, **kwargs)
+
+    monkeypatch.setattr(test_predictor.model, "forward", counting_forward)
+
+    with TestClient(app) as client:
+        monkeypatch.setattr(api_main, "_predictor", test_predictor)
+        sequence = [[0.0] * test_predictor.input_dim for _ in range(test_predictor.sequence_length)]
+        response = client.post("/predict", json={"sequence": sequence, "confidence_threshold": 0.0})
+        assert response.status_code == 200
+        assert call_count == 1, f"Expected exactly 1 forward pass per /predict request, got {call_count}"
+
+
+def test_cors_restricted_origins() -> None:
+    """Verify CORS does not use an unrestricted wildcard in default configuration."""
+    with TestClient(app) as client:
+        # Preflight from authorized local frontend
+        headers_allowed = {
+            "Origin": "http://localhost:5173",
+            "Access-Control-Request-Method": "POST",
+        }
+        res_allowed = client.options("/predict", headers=headers_allowed)
+        assert res_allowed.headers.get("access-control-allow-origin") == "http://localhost:5173"
+
+        # Preflight from untrusted foreign origin
+        headers_untrusted = {
+            "Origin": "http://untrusted-external-site.com",
+            "Access-Control-Request-Method": "POST",
+        }
+        res_untrusted = client.options("/predict", headers=headers_untrusted)
+        assert res_untrusted.headers.get("access-control-allow-origin") != "*"
+        assert res_untrusted.headers.get("access-control-allow-origin") != "http://untrusted-external-site.com"

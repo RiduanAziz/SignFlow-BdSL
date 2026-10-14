@@ -113,12 +113,25 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-# CORS middleware for local frontend development
+# Safer CORS configuration: restricted development origins and optional CORS_ORIGINS env var
+cors_env = os.environ.get("CORS_ORIGINS")
+if cors_env:
+    allowed_origins = [orig.strip() for orig in cors_env.split(",") if orig.strip()]
+else:
+    allowed_origins = [
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+        "http://localhost:8000",
+        "http://127.0.0.1:8000",
+    ]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=allowed_origins,
     allow_credentials=True,
-    allow_methods=["*"],
+    allow_methods=["GET", "POST", "OPTIONS"],
     allow_headers=["*"],
 )
 
@@ -219,10 +232,9 @@ def predict(request: PredictionRequest) -> dict[str, Any]:
     predictor = get_predictor()
 
     try:
-        prediction_result = predictor.predict_label(
+        prediction_result = predictor.predict_with_logits(
             sequence, confidence_threshold=request.confidence_threshold
         )
-        logits = predictor.predict_logits(sequence)
     except Exception as exc:
         raise HTTPException(status_code=400, detail=str(exc))
 
@@ -231,7 +243,7 @@ def predict(request: PredictionRequest) -> dict[str, Any]:
     return {
         "sequence_length": payload["sequence_length"],
         "feature_dim": payload["feature_dim"],
-        "logits": [float(v) for v in logits],
+        "logits": prediction_result["logits"],
         "predicted_class": prediction_result["predicted_class"],
         "predicted_label": prediction_result["predicted_label"],
         "bengali_label": prediction_result.get("bengali_label", prediction_result["predicted_label"]),
@@ -548,6 +560,8 @@ async def websocket_live_recognition(websocket: WebSocket) -> None:
                     s.current_candidate = None
                     s.current_confidence = 0.0
                     s.candidate_history.clear()
+                    s.sequence_buffer.clear()
+                    s.mask_buffer.clear()
                     s.state = "WAITING"
                     await websocket.send_json({
                         "type": "word_candidate",

@@ -19,7 +19,12 @@ class DatasetConfig:
     sequence_length: int = DEFAULT_SEQUENCE_LENGTH
     feature_representation: str = "hands"
     manifest: str | None = None
+    train_manifest: str | None = None
+    val_manifest: str | None = None
+    test_manifest: str | None = None
     raw_root: str | None = None
+    landmarks_dir: str | None = None
+    num_classes: int | None = None
 
 
 @dataclass

@@ -1,6 +1,9 @@
 dataset:
   root: data/landmarks/bdslw131
   manifest: data/manifests/bdslw131_dataset_manifest.csv
+  train_manifest: data/manifests/bdslw131_train_manifest.json
+  val_manifest: data/manifests/bdslw131_val_manifest.json
+  test_manifest: data/manifests/bdslw131_test_manifest.json
   raw_root: data/raw/bangla-sign-dataset
   sequence_length: 1
   feature_representation: holistic

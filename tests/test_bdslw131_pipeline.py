@@ -174,3 +174,198 @@ def test_synthetic_robustness_ci_fixtures() -> None:
     frame_dropped = apply_temporal_noise(seq, "frame_drop", severity=0.2, seed=42)
     assert frame_dropped.shape[1] == seq.shape[1]
     assert frame_dropped.shape[0] < seq.shape[0]
+
+
+def test_deterministic_split_dataset_canonical_paths_and_disjointness(tmp_path: Path) -> None:
+    """End-to-end test verifying canonical split filenames, mutual disjointness, and determinism."""
+    from sign_language.data.splitting import split_dataset_stratified, write_manifest_splits
+
+    # 1. Create synthetic manifest records across 5 classes
+    classes = ["অপেক্ষা করো_Wait", "অফিস_Office", "আইন_Law", "আজ_Today", "আট_Eight"]
+    synthetic_records = []
+    sample_idx = 0
+    for cls in classes:
+        for i in range(20):
+            sample_idx += 1
+            synthetic_records.append({
+                "sample_id": f"synth_{sample_idx:04d}",
+                "filepath": f"{cls}/img_{i:03d}.jpg",
+                "label": cls,
+                "class_id": classes.index(cls),
+                "is_valid": 1,
+            })
+
+    # 2. Run stratified split with seed 42
+    train1, val1, test1 = split_dataset_stratified(
+        synthetic_records,
+        train_ratio=0.7,
+        val_ratio=0.15,
+        test_ratio=0.15,
+        seed=42,
+    )
+    _ = write_manifest_splits(train1, val1, test1, output_dir=tmp_path / "run1", prefix="bdslw131_")
+
+    # Verify canonical paths
+    assert (tmp_path / "run1" / "bdslw131_train_manifest.json").is_file()
+    assert (tmp_path / "run1" / "bdslw131_val_manifest.json").is_file()
+    assert (tmp_path / "run1" / "bdslw131_test_manifest.json").is_file()
+
+    train_ids = {s["sample_id"] for s in train1}
+    val_ids = {s["sample_id"] for s in val1}
+    test_ids = {s["sample_id"] for s in test1}
+
+    # Mutual disjointness assertion
+    assert len(train_ids & val_ids) == 0, "Train and val sets overlap!"
+    assert len(train_ids & test_ids) == 0, "Train and test sets overlap!"
+    assert len(val_ids & test_ids) == 0, "Val and test sets overlap!"
+
+    # Full accounting assertion
+    all_split_ids = train_ids | val_ids | test_ids
+    original_ids = {s["sample_id"] for s in synthetic_records}
+    assert all_split_ids == original_ids, "Not all samples accounted for in split output"
+
+    # Class coverage assertion
+    assert len({s["label"] for s in train1}) == len(classes)
+    assert len({s["label"] for s in val1}) == len(classes)
+    assert len({s["label"] for s in test1}) == len(classes)
+
+    # 3. Determinism check: running with same seed yields identical sample sets
+    train2, val2, test2 = split_dataset_stratified(
+        synthetic_records,
+        train_ratio=0.7,
+        val_ratio=0.15,
+        test_ratio=0.15,
+        seed=42,
+    )
+    assert {s["sample_id"] for s in train2} == train_ids
+    assert {s["sample_id"] for s in val2} == val_ids
+    assert {s["sample_id"] for s in test2} == test_ids
+
+
+def test_signer_based_split_disjointness_and_canonical_naming(tmp_path: Path) -> None:
+    """Verify that signer-based splitting produces canonical filenames and strictly disjoint signers."""
+    from sign_language.data.splitting import split_dataset_by_signer, write_manifest_splits
+
+    synthetic_records = []
+    signers = ["signer_01", "signer_02", "signer_03", "signer_04", "signer_05", "signer_06"]
+    classes = ["অফিস_Office", "আইন_Law"]
+
+    for s_idx, signer in enumerate(signers):
+        for c_idx, cls in enumerate(classes):
+            for i in range(5):
+                synthetic_records.append({
+                    "sample_id": f"sample_{s_idx}_{c_idx}_{i}",
+                    "filepath": f"{cls}/img_{s_idx}_{i}.jpg",
+                    "label": cls,
+                    "signer_id": signer,
+                    "is_valid": 1,
+                })
+
+    train_s, val_s, test_s = split_dataset_by_signer(
+        synthetic_records,
+        seed=42,
+    )
+    _ = write_manifest_splits(train_s, val_s, test_s, output_dir=tmp_path / "signer_run", prefix="bdslw131_")
+
+    assert (tmp_path / "signer_run" / "bdslw131_train_manifest.json").is_file()
+    assert (tmp_path / "signer_run" / "bdslw131_val_manifest.json").is_file()
+    assert (tmp_path / "signer_run" / "bdslw131_test_manifest.json").is_file()
+
+    train_signers = {s["signer_id"] for s in train_s}
+    val_signers = {s["signer_id"] for s in val_s}
+    test_signers = {s["signer_id"] for s in test_s}
+
+    assert len(train_signers & val_signers) == 0
+    assert len(train_signers & test_signers) == 0
+    assert len(val_signers & test_signers) == 0
+
+
+def test_training_fails_closed_on_full_discovery_manifest() -> None:
+    """Verify that training fails closed with a clear error if the full discovery manifest is passed."""
+    import scripts.train as train_script
+
+    with pytest.raises(ValueError) as excinfo:
+        train_script.validate_manifest_split_selection("data/manifests/bdslw131_dataset_manifest.csv")
+    assert "Full dataset manifest" in str(excinfo.value)
+    assert "cannot be used directly for training" in str(excinfo.value)
+
+
+def test_training_detects_deliberate_split_leakage() -> None:
+    """Verify that training startup detects any sample overlap between train, val, and test manifests."""
+    import scripts.train as train_script
+
+    train_samples = [{"sample_id": "sample_001"}, {"sample_id": "sample_002"}]
+    val_samples = [{"sample_id": "sample_003"}]
+    # Deliberate contamination: test manifest contains sample_002 from train
+    test_samples = [{"sample_id": "sample_002"}, {"sample_id": "sample_004"}]
+
+    with pytest.raises(ValueError) as excinfo:
+        train_script.validate_split_disjointness(train_samples, val_samples, test_samples)
+    assert "Data leakage detected" in str(excinfo.value)
+    assert "sample_002" in str(excinfo.value)
+
+
+def test_inspect_dataset_preserves_canonical_vocabulary_and_transliteration(tmp_path: Path) -> None:
+    """Verify that candidate vocabulary generation does not overwrite canonical vocabulary without explicit flag."""
+    import scripts.inspect_bdslw131_dataset as inspect_mod
+
+    # Create dummy raw class folder
+    raw_dir = tmp_path / "raw"
+    c1 = raw_dir / "অপেক্ষা করো_Wait"
+    c1.mkdir(parents=True)
+
+    cand_vocab_path = tmp_path / "results" / "candidate_vocab.json"
+    canonical_vocab_path = tmp_path / "configs" / "canonical_vocab.json"
+
+    # Pre-populate canonical vocabulary with verified transliteration
+    canonical_vocab_path.parent.mkdir(parents=True)
+    initial_canonical = [{
+        "class_id": 0,
+        "dataset_label": "অপেক্ষা করো_Wait",
+        "bengali_label": "অপেক্ষা করো",
+        "english_gloss": "Wait",
+        "transliteration": "opekkha koro",
+        "source": "manual_curation",
+    }]
+    with open(canonical_vocab_path, "w", encoding="utf-8") as f:
+        json.dump(initial_canonical, f)
+
+    # 1. Running inspection WITHOUT --update-canonical-vocabulary must NOT modify canonical file
+    inspect_mod.inspect_bdslw131(
+        raw_dir=raw_dir,
+        manifest_output=tmp_path / "manifest.csv",
+        report_output=tmp_path / "report.json",
+        distribution_output=tmp_path / "dist.csv",
+        candidate_vocabulary_output=cand_vocab_path,
+        canonical_vocabulary_path=None,  # No update requested
+        check_images=False,
+    )
+
+    assert cand_vocab_path.is_file()
+    with open(cand_vocab_path, "r", encoding="utf-8") as f:
+        cand_data = json.load(f)
+    # Candidate vocabulary transliteration is empty, not conflated with english_gloss
+    assert cand_data[0]["transliteration"] == ""
+    assert cand_data[0]["english_gloss"] == "Wait"
+
+    # Canonical vocabulary remains untouched
+    with open(canonical_vocab_path, "r", encoding="utf-8") as f:
+        curr_canonical = json.load(f)
+    assert curr_canonical[0]["transliteration"] == "opekkha koro"
+
+    # 2. Running WITH --update-canonical-vocabulary preserves manually curated transliteration and creates backup
+    inspect_mod.inspect_bdslw131(
+        raw_dir=raw_dir,
+        manifest_output=tmp_path / "manifest.csv",
+        report_output=tmp_path / "report.json",
+        distribution_output=tmp_path / "dist.csv",
+        candidate_vocabulary_output=cand_vocab_path,
+        canonical_vocabulary_path=canonical_vocab_path,
+        check_images=False,
+    )
+
+    assert canonical_vocab_path.with_suffix(".json.bak").is_file()
+    with open(canonical_vocab_path, "r", encoding="utf-8") as f:
+        updated_canonical = json.load(f)
+    # Preserved curated transliteration
+    assert updated_canonical[0]["transliteration"] == "opekkha koro"

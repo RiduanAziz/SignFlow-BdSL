@@ -1,0 +1,1050 @@
+[
+  {
+    "class_id": 0,
+    "dataset_label": "অপেক্ষা করো_Wait",
+    "bengali_label": "অপেক্ষা করো",
+    "english_gloss": "Wait",
+    "transliteration": "Wait",
+    "source": "BDSLW131 official folder naming"
+  },
+  {
+    "class_id": 1,
+    "dataset_label": "অফিস_Office",
+    "bengali_label": "অফিস",
+    "english_gloss": "Office",
+    "transliteration": "Office",
+    "source": "BDSLW131 official folder naming"
+  },
+  {
+    "class_id": 2,
+    "dataset_label": "আইন_Law",
+    "bengali_label": "আইন",
+    "english_gloss": "Law",
+    "transliteration": "Law",
+    "source": "BDSLW131 official folder naming"
+  },
+  {
+    "class_id": 3,
+    "dataset_label": "আঙুল_Finger",
+    "bengali_label": "আঙুল",
+    "english_gloss": "Finger",
+    "transliteration": "Finger",
+    "source": "BDSLW131 official folder naming"
+  },
+  {
+    "class_id": 4,
+    "dataset_label": "আজ_Today",
+    "bengali_label": "আজ",
+    "english_gloss": "Today",
+    "transliteration": "Today",
+    "source": "BDSLW131 official folder naming"
+  },
+  {
+    "class_id": 5,
+    "dataset_label": "আট_Eight",
+    "bengali_label": "আট",
+    "english_gloss": "Eight",
+    "transliteration": "Eight",
+    "source": "BDSLW131 official folder naming"
+  },
+  {
+    "class_id": 6,
+    "dataset_label": "আদা_Ginger",
+    "bengali_label": "আদা",
+    "english_gloss": "Ginger",
+    "transliteration": "Ginger",
+    "source": "BDSLW131 official folder naming"
+  },
+  {
+    "class_id": 7,
+    "dataset_label": "আমার_My",
+    "bengali_label": "আমার",
+    "english_gloss": "My",
+    "transliteration": "My",
+    "source": "BDSLW131 official folder naming"
+  },
+  {
+    "class_id": 8,
+    "dataset_label": "আমি_I (Me)",
+    "bengali_label": "আমি",
+    "english_gloss": "I (Me)",
+    "transliteration": "I (Me)",
+    "source": "BDSLW131 official folder naming"
+  },
+  {
+    "class_id": 9,
+    "dataset_label": "আয়না_Mirror",
+    "bengali_label": "আয়না",
+    "english_gloss": "Mirror",
+    "transliteration": "Mirror",
+    "source": "BDSLW131 official folder naming"
+  },
+  {
+    "class_id": 10,
+    "dataset_label": "ইনস্টাগ্রাম_Instagram",
+    "bengali_label": "ইনস্টাগ্রাম",
+    "english_gloss": "Instagram",
+    "transliteration": "Instagram",
+    "source": "BDSLW131 official folder naming"
+  },
+  {
+    "class_id": 11,
+    "dataset_label": "এক_One",
+    "bengali_label": "এক",
+    "english_gloss": "One",
+    "transliteration": "One",
+    "source": "BDSLW131 official folder naming"
+  },
+  {
+    "class_id": 12,
+    "dataset_label": "এখন_Now",
+    "bengali_label": "এখন",
+    "english_gloss": "Now",
+    "transliteration": "Now",
+    "source": "BDSLW131 official folder naming"
+  },
+  {
+    "class_id": 13,
+    "dataset_label": "এটি_This",
+    "bengali_label": "এটি",
+    "english_gloss": "This",
+    "transliteration": "This",
+    "source": "BDSLW131 official folder naming"
+  },
+  {
+    "class_id": 14,
+    "dataset_label": "ওটা(সেটা)_That",
+    "bengali_label": "ওটা(সেটা)",
+    "english_gloss": "That",
+    "transliteration": "That",
+    "source": "BDSLW131 official folder naming"
+  },
+  {
+    "class_id": 15,
+    "dataset_label": "ওয়াই-ফাই_Wi-Fi",
+    "bengali_label": "ওয়াই-ফাই",
+    "english_gloss": "Wi-Fi",
+    "transliteration": "Wi-Fi",
+    "source": "BDSLW131 official folder naming"
+  },
+  {
+    "class_id": 16,
+    "dataset_label": "কখন_When",
+    "bengali_label": "কখন",
+    "english_gloss": "When",
+    "transliteration": "When",
+    "source": "BDSLW131 official folder naming"
+  },
+  {
+    "class_id": 17,
+    "dataset_label": "কর্মচারী_Employee",
+    "bengali_label": "কর্মচারী",
+    "english_gloss": "Employee",
+    "transliteration": "Employee",
+    "source": "BDSLW131 official folder naming"
+  },
+  {
+    "class_id": 18,
+    "dataset_label": "কাঁধ_Shoulder",
+    "bengali_label": "কাঁধ",
+    "english_gloss": "Shoulder",
+    "transliteration": "Shoulder",
+    "source": "BDSLW131 official folder naming"
+  },
+  {
+    "class_id": 19,
+    "dataset_label": "কাজ_Work",
+    "bengali_label": "কাজ",
+    "english_gloss": "Work",
+    "transliteration": "Work",
+    "source": "BDSLW131 official folder naming"
+  },
+  {
+    "class_id": 20,
+    "dataset_label": "কাঠ_Wood",
+    "bengali_label": "কাঠ",
+    "english_gloss": "Wood",
+    "transliteration": "Wood",
+    "source": "BDSLW131 official folder naming"
+  },
+  {
+    "class_id": 21,
+    "dataset_label": "কান_Ear",
+    "bengali_label": "কান",
+    "english_gloss": "Ear",
+    "transliteration": "Ear",
+    "source": "BDSLW131 official folder naming"
+  },
+  {
+    "class_id": 22,
+    "dataset_label": "কী_What",
+    "bengali_label": "কী",
+    "english_gloss": "What",
+    "transliteration": "What",
+    "source": "BDSLW131 official folder naming"
+  },
+  {
+    "class_id": 23,
+    "dataset_label": "কে_Who",
+    "bengali_label": "কে",
+    "english_gloss": "Who",
+    "transliteration": "Who",
+    "source": "BDSLW131 official folder naming"
+  },
+  {
+    "class_id": 24,
+    "dataset_label": "ক্লান্ত_Tired",
+    "bengali_label": "ক্লান্ত",
+    "english_gloss": "Tired",
+    "transliteration": "Tired",
+    "source": "BDSLW131 official folder naming"
+  },
+  {
+    "class_id": 25,
+    "dataset_label": "ক্ষুধার্ত_Hungry",
+    "bengali_label": "ক্ষুধার্ত",
+    "english_gloss": "Hungry",
+    "transliteration": "Hungry",
+    "source": "BDSLW131 official folder naming"
+  },
+  {
+    "class_id": 26,
+    "dataset_label": "খাওয়া_Eating",
+    "bengali_label": "খাওয়া",
+    "english_gloss": "Eating",
+    "transliteration": "Eating",
+    "source": "BDSLW131 official folder naming"
+  },
+  {
+    "class_id": 27,
+    "dataset_label": "খারাপ_Bad",
+    "bengali_label": "খারাপ",
+    "english_gloss": "Bad",
+    "transliteration": "Bad",
+    "source": "BDSLW131 official folder naming"
+  },
+  {
+    "class_id": 28,
+    "dataset_label": "গণিত_Mathematics",
+    "bengali_label": "গণিত",
+    "english_gloss": "Mathematics",
+    "transliteration": "Mathematics",
+    "source": "BDSLW131 official folder naming"
+  },
+  {
+    "class_id": 29,
+    "dataset_label": "গরু_Cow",
+    "bengali_label": "গরু",
+    "english_gloss": "Cow",
+    "transliteration": "Cow",
+    "source": "BDSLW131 official folder naming"
+  },
+  {
+    "class_id": 30,
+    "dataset_label": "গলা_Neck",
+    "bengali_label": "গলা",
+    "english_gloss": "Neck",
+    "transliteration": "Neck",
+    "source": "BDSLW131 official folder naming"
+  },
+  {
+    "class_id": 31,
+    "dataset_label": "গুণ_Multiplication",
+    "bengali_label": "গুণ",
+    "english_gloss": "Multiplication",
+    "transliteration": "Multiplication",
+    "source": "BDSLW131 official folder naming"
+  },
+  {
+    "class_id": 32,
+    "dataset_label": "ঘড়ি_Clock",
+    "bengali_label": "ঘড়ি",
+    "english_gloss": "Clock",
+    "transliteration": "Clock",
+    "source": "BDSLW131 official folder naming"
+  },
+  {
+    "class_id": 33,
+    "dataset_label": "ঘুমানো_Sleeping",
+    "bengali_label": "ঘুমানো",
+    "english_gloss": "Sleeping",
+    "transliteration": "Sleeping",
+    "source": "BDSLW131 official folder naming"
+  },
+  {
+    "class_id": 34,
+    "dataset_label": "চট্টগ্রাম_Chittagong",
+    "bengali_label": "চট্টগ্রাম",
+    "english_gloss": "Chittagong",
+    "transliteration": "Chittagong",
+    "source": "BDSLW131 official folder naming"
+  },
+  {
+    "class_id": 35,
+    "dataset_label": "চাচা(মামা)_Uncle",
+    "bengali_label": "চাচা(মামা)",
+    "english_gloss": "Uncle",
+    "transliteration": "Uncle",
+    "source": "BDSLW131 official folder naming"
+  },
+  {
+    "class_id": 36,
+    "dataset_label": "চামড়া_Skin",
+    "bengali_label": "চামড়া",
+    "english_gloss": "Skin",
+    "transliteration": "Skin",
+    "source": "BDSLW131 official folder naming"
+  },
+  {
+    "class_id": 37,
+    "dataset_label": "চার_Four",
+    "bengali_label": "চার",
+    "english_gloss": "Four",
+    "transliteration": "Four",
+    "source": "BDSLW131 official folder naming"
+  },
+  {
+    "class_id": 38,
+    "dataset_label": "চুপ করো_Shut up",
+    "bengali_label": "চুপ করো",
+    "english_gloss": "Shut up",
+    "transliteration": "Shut up",
+    "source": "BDSLW131 official folder naming"
+  },
+  {
+    "class_id": 39,
+    "dataset_label": "চুল_Hair",
+    "bengali_label": "চুল",
+    "english_gloss": "Hair",
+    "transliteration": "Hair",
+    "source": "BDSLW131 official folder naming"
+  },
+  {
+    "class_id": 40,
+    "dataset_label": "চোখ_Eye",
+    "bengali_label": "চোখ",
+    "english_gloss": "Eye",
+    "transliteration": "Eye",
+    "source": "BDSLW131 official folder naming"
+  },
+  {
+    "class_id": 41,
+    "dataset_label": "ছয়_Six",
+    "bengali_label": "ছয়",
+    "english_gloss": "Six",
+    "transliteration": "Six",
+    "source": "BDSLW131 official folder naming"
+  },
+  {
+    "class_id": 42,
+    "dataset_label": "ছোট_Small",
+    "bengali_label": "ছোট",
+    "english_gloss": "Small",
+    "transliteration": "Small",
+    "source": "BDSLW131 official folder naming"
+  },
+  {
+    "class_id": 43,
+    "dataset_label": "জিহ্বা_Tongue",
+    "bengali_label": "জিহ্বা",
+    "english_gloss": "Tongue",
+    "transliteration": "Tongue",
+    "source": "BDSLW131 official folder naming"
+  },
+  {
+    "class_id": 44,
+    "dataset_label": "জুতো_Shoe",
+    "bengali_label": "জুতো",
+    "english_gloss": "Shoe",
+    "transliteration": "Shoe",
+    "source": "BDSLW131 official folder naming"
+  },
+  {
+    "class_id": 45,
+    "dataset_label": "জেল_Prison",
+    "bengali_label": "জেল",
+    "english_gloss": "Prison",
+    "transliteration": "Prison",
+    "source": "BDSLW131 official folder naming"
+  },
+  {
+    "class_id": 46,
+    "dataset_label": "জ্বর_Fever",
+    "bengali_label": "জ্বর",
+    "english_gloss": "Fever",
+    "transliteration": "Fever",
+    "source": "BDSLW131 official folder naming"
+  },
+  {
+    "class_id": 47,
+    "dataset_label": "টয়লেট_Toilet",
+    "bengali_label": "টয়লেট",
+    "english_gloss": "Toilet",
+    "transliteration": "Toilet",
+    "source": "BDSLW131 official folder naming"
+  },
+  {
+    "class_id": 48,
+    "dataset_label": "টুপি_Cap",
+    "bengali_label": "টুপি",
+    "english_gloss": "Cap",
+    "transliteration": "Cap",
+    "source": "BDSLW131 official folder naming"
+  },
+  {
+    "class_id": 49,
+    "dataset_label": "ঠান্ডা_Cold",
+    "bengali_label": "ঠান্ডা",
+    "english_gloss": "Cold",
+    "transliteration": "Cold",
+    "source": "BDSLW131 official folder naming"
+  },
+  {
+    "class_id": 50,
+    "dataset_label": "ডাক্তার_Doctor",
+    "bengali_label": "ডাক্তার",
+    "english_gloss": "Doctor",
+    "transliteration": "Doctor",
+    "source": "BDSLW131 official folder naming"
+  },
+  {
+    "class_id": 51,
+    "dataset_label": "ডান_Right",
+    "bengali_label": "ডান",
+    "english_gloss": "Right",
+    "transliteration": "Right",
+    "source": "BDSLW131 official folder naming"
+  },
+  {
+    "class_id": 52,
+    "dataset_label": "ডিম_Egg",
+    "bengali_label": "ডিম",
+    "english_gloss": "Egg",
+    "transliteration": "Egg",
+    "source": "BDSLW131 official folder naming"
+  },
+  {
+    "class_id": 53,
+    "dataset_label": "তার_His",
+    "bengali_label": "তার",
+    "english_gloss": "His",
+    "transliteration": "His",
+    "source": "BDSLW131 official folder naming"
+  },
+  {
+    "class_id": 54,
+    "dataset_label": "তিন_Three",
+    "bengali_label": "তিন",
+    "english_gloss": "Three",
+    "transliteration": "Three",
+    "source": "BDSLW131 official folder naming"
+  },
+  {
+    "class_id": 55,
+    "dataset_label": "তুমি(আপনি)_You",
+    "bengali_label": "তুমি(আপনি)",
+    "english_gloss": "You",
+    "transliteration": "You",
+    "source": "BDSLW131 official folder naming"
+  },
+  {
+    "class_id": 56,
+    "dataset_label": "তৃতীয়_Third",
+    "bengali_label": "তৃতীয়",
+    "english_gloss": "Third",
+    "transliteration": "Third",
+    "source": "BDSLW131 official folder naming"
+  },
+  {
+    "class_id": 57,
+    "dataset_label": "তোমার(আপনার)_Your",
+    "bengali_label": "তোমার(আপনার)",
+    "english_gloss": "Your",
+    "transliteration": "Your",
+    "source": "BDSLW131 official folder naming"
+  },
+  {
+    "class_id": 58,
+    "dataset_label": "থামো_Stop",
+    "bengali_label": "থামো",
+    "english_gloss": "Stop",
+    "transliteration": "Stop",
+    "source": "BDSLW131 official folder naming"
+  },
+  {
+    "class_id": 59,
+    "dataset_label": "দাঁড়াও_Stand",
+    "bengali_label": "দাঁড়াও",
+    "english_gloss": "Stand",
+    "transliteration": "Stand",
+    "source": "BDSLW131 official folder naming"
+  },
+  {
+    "class_id": 60,
+    "dataset_label": "দাঁত মাজা_Brush teeth",
+    "bengali_label": "দাঁত মাজা",
+    "english_gloss": "Brush teeth",
+    "transliteration": "Brush teeth",
+    "source": "BDSLW131 official folder naming"
+  },
+  {
+    "class_id": 61,
+    "dataset_label": "দাঁত_Teeth",
+    "bengali_label": "দাঁত",
+    "english_gloss": "Teeth",
+    "transliteration": "Teeth",
+    "source": "BDSLW131 official folder naming"
+  },
+  {
+    "class_id": 62,
+    "dataset_label": "দাদী(নানী)_Grandmother",
+    "bengali_label": "দাদী(নানী)",
+    "english_gloss": "Grandmother",
+    "transliteration": "Grandmother",
+    "source": "BDSLW131 official folder naming"
+  },
+  {
+    "class_id": 63,
+    "dataset_label": "দুঃখিত_Sorry",
+    "bengali_label": "দুঃখিত",
+    "english_gloss": "Sorry",
+    "transliteration": "Sorry",
+    "source": "BDSLW131 official folder naming"
+  },
+  {
+    "class_id": 64,
+    "dataset_label": "দুই_Two",
+    "bengali_label": "দুই",
+    "english_gloss": "Two",
+    "transliteration": "Two",
+    "source": "BDSLW131 official folder naming"
+  },
+  {
+    "class_id": 65,
+    "dataset_label": "দৃষ্টি_Sight",
+    "bengali_label": "দৃষ্টি",
+    "english_gloss": "Sight",
+    "transliteration": "Sight",
+    "source": "BDSLW131 official folder naming"
+  },
+  {
+    "class_id": 66,
+    "dataset_label": "দেশ_Country",
+    "bengali_label": "দেশ",
+    "english_gloss": "Country",
+    "transliteration": "Country",
+    "source": "BDSLW131 official folder naming"
+  },
+  {
+    "class_id": 67,
+    "dataset_label": "দ্বিতীয়_Second",
+    "bengali_label": "দ্বিতীয়",
+    "english_gloss": "Second",
+    "transliteration": "Second",
+    "source": "BDSLW131 official folder naming"
+  },
+  {
+    "class_id": 68,
+    "dataset_label": "নখ_Nail",
+    "bengali_label": "নখ",
+    "english_gloss": "Nail",
+    "transliteration": "Nail",
+    "source": "BDSLW131 official folder naming"
+  },
+  {
+    "class_id": 69,
+    "dataset_label": "নয়_Nine",
+    "bengali_label": "নয়",
+    "english_gloss": "Nine",
+    "transliteration": "Nine",
+    "source": "BDSLW131 official folder naming"
+  },
+  {
+    "class_id": 70,
+    "dataset_label": "নাক_Nose",
+    "bengali_label": "নাক",
+    "english_gloss": "Nose",
+    "transliteration": "Nose",
+    "source": "BDSLW131 official folder naming"
+  },
+  {
+    "class_id": 71,
+    "dataset_label": "নাচ_Dance",
+    "bengali_label": "নাচ",
+    "english_gloss": "Dance",
+    "transliteration": "Dance",
+    "source": "BDSLW131 official folder naming"
+  },
+  {
+    "class_id": 72,
+    "dataset_label": "নাটক_Drama",
+    "bengali_label": "নাটক",
+    "english_gloss": "Drama",
+    "transliteration": "Drama",
+    "source": "BDSLW131 official folder naming"
+  },
+  {
+    "class_id": 73,
+    "dataset_label": "পরামর্শ_Counseling",
+    "bengali_label": "পরামর্শ",
+    "english_gloss": "Counseling",
+    "transliteration": "Counseling",
+    "source": "BDSLW131 official folder naming"
+  },
+  {
+    "class_id": 74,
+    "dataset_label": "পরীক্ষা_Exam",
+    "bengali_label": "পরীক্ষা",
+    "english_gloss": "Exam",
+    "transliteration": "Exam",
+    "source": "BDSLW131 official folder naming"
+  },
+  {
+    "class_id": 75,
+    "dataset_label": "পা_Leg",
+    "bengali_label": "পা",
+    "english_gloss": "Leg",
+    "transliteration": "Leg",
+    "source": "BDSLW131 official folder naming"
+  },
+  {
+    "class_id": 76,
+    "dataset_label": "পাঁচ_Five",
+    "bengali_label": "পাঁচ",
+    "english_gloss": "Five",
+    "transliteration": "Five",
+    "source": "BDSLW131 official folder naming"
+  },
+  {
+    "class_id": 77,
+    "dataset_label": "প্রজ্ঞা_Wisdom",
+    "bengali_label": "প্রজ্ঞা",
+    "english_gloss": "Wisdom",
+    "transliteration": "Wisdom",
+    "source": "BDSLW131 official folder naming"
+  },
+  {
+    "class_id": 78,
+    "dataset_label": "প্রস্রাব_Urine",
+    "bengali_label": "প্রস্রাব",
+    "english_gloss": "Urine",
+    "transliteration": "Urine",
+    "source": "BDSLW131 official folder naming"
+  },
+  {
+    "class_id": 79,
+    "dataset_label": "প্রার্থনা_Praying",
+    "bengali_label": "প্রার্থনা",
+    "english_gloss": "Praying",
+    "transliteration": "Praying",
+    "source": "BDSLW131 official folder naming"
+  },
+  {
+    "class_id": 80,
+    "dataset_label": "ফোন_Phone",
+    "bengali_label": "ফোন",
+    "english_gloss": "Phone",
+    "transliteration": "Phone",
+    "source": "BDSLW131 official folder naming"
+  },
+  {
+    "class_id": 81,
+    "dataset_label": "বড়_Big",
+    "bengali_label": "বড়",
+    "english_gloss": "Big",
+    "transliteration": "Big",
+    "source": "BDSLW131 official folder naming"
+  },
+  {
+    "class_id": 82,
+    "dataset_label": "বল_Ball",
+    "bengali_label": "বল",
+    "english_gloss": "Ball",
+    "transliteration": "Ball",
+    "source": "BDSLW131 official folder naming"
+  },
+  {
+    "class_id": 83,
+    "dataset_label": "বস_Boss",
+    "bengali_label": "বস",
+    "english_gloss": "Boss",
+    "transliteration": "Boss",
+    "source": "BDSLW131 official folder naming"
+  },
+  {
+    "class_id": 84,
+    "dataset_label": "বাঘ_Tiger",
+    "bengali_label": "বাঘ",
+    "english_gloss": "Tiger",
+    "transliteration": "Tiger",
+    "source": "BDSLW131 official folder naming"
+  },
+  {
+    "class_id": 85,
+    "dataset_label": "বাড়ি_House",
+    "bengali_label": "বাড়ি",
+    "english_gloss": "House",
+    "transliteration": "House",
+    "source": "BDSLW131 official folder naming"
+  },
+  {
+    "class_id": 86,
+    "dataset_label": "বানর_Monkey",
+    "bengali_label": "বানর",
+    "english_gloss": "Monkey",
+    "transliteration": "Monkey",
+    "source": "BDSLW131 official folder naming"
+  },
+  {
+    "class_id": 87,
+    "dataset_label": "বাম_Left",
+    "bengali_label": "বাম",
+    "english_gloss": "Left",
+    "transliteration": "Left",
+    "source": "BDSLW131 official folder naming"
+  },
+  {
+    "class_id": 88,
+    "dataset_label": "বিদেশ_Abroad",
+    "bengali_label": "বিদেশ",
+    "english_gloss": "Abroad",
+    "transliteration": "Abroad",
+    "source": "BDSLW131 official folder naming"
+  },
+  {
+    "class_id": 89,
+    "dataset_label": "বিমান_Airplane",
+    "bengali_label": "বিমান",
+    "english_gloss": "Airplane",
+    "transliteration": "Airplane",
+    "source": "BDSLW131 official folder naming"
+  },
+  {
+    "class_id": 90,
+    "dataset_label": "বিয়োগ_Subtraction",
+    "bengali_label": "বিয়োগ",
+    "english_gloss": "Subtraction",
+    "transliteration": "Subtraction",
+    "source": "BDSLW131 official folder naming"
+  },
+  {
+    "class_id": 91,
+    "dataset_label": "বুক_Chest",
+    "bengali_label": "বুক",
+    "english_gloss": "Chest",
+    "transliteration": "Chest",
+    "source": "BDSLW131 official folder naming"
+  },
+  {
+    "class_id": 92,
+    "dataset_label": "বৃহস্পতিবার_Thursday",
+    "bengali_label": "বৃহস্পতিবার",
+    "english_gloss": "Thursday",
+    "transliteration": "Thursday",
+    "source": "BDSLW131 official folder naming"
+  },
+  {
+    "class_id": 93,
+    "dataset_label": "বোন_Sister",
+    "bengali_label": "বোন",
+    "english_gloss": "Sister",
+    "transliteration": "Sister",
+    "source": "BDSLW131 official folder naming"
+  },
+  {
+    "class_id": 94,
+    "dataset_label": "ব্রেইল_Braille",
+    "bengali_label": "ব্রেইল",
+    "english_gloss": "Braille",
+    "transliteration": "Braille",
+    "source": "BDSLW131 official folder naming"
+  },
+  {
+    "class_id": 95,
+    "dataset_label": "ভাই_Brother",
+    "bengali_label": "ভাই",
+    "english_gloss": "Brother",
+    "transliteration": "Brother",
+    "source": "BDSLW131 official folder naming"
+  },
+  {
+    "class_id": 96,
+    "dataset_label": "ভাগ্য_Destiny",
+    "bengali_label": "ভাগ্য",
+    "english_gloss": "Destiny",
+    "transliteration": "Destiny",
+    "source": "BDSLW131 official folder naming"
+  },
+  {
+    "class_id": 97,
+    "dataset_label": "ভালো_Good",
+    "bengali_label": "ভালো",
+    "english_gloss": "Good",
+    "transliteration": "Good",
+    "source": "BDSLW131 official folder naming"
+  },
+  {
+    "class_id": 98,
+    "dataset_label": "ভালোবাসা_Love",
+    "bengali_label": "ভালোবাসা",
+    "english_gloss": "Love",
+    "transliteration": "Love",
+    "source": "BDSLW131 official folder naming"
+  },
+  {
+    "class_id": 99,
+    "dataset_label": "ভিসা_Visa",
+    "bengali_label": "ভিসা",
+    "english_gloss": "Visa",
+    "transliteration": "Visa",
+    "source": "BDSLW131 official folder naming"
+  },
+  {
+    "class_id": 100,
+    "dataset_label": "ভুল_Incorrect",
+    "bengali_label": "ভুল",
+    "english_gloss": "Incorrect",
+    "transliteration": "Incorrect",
+    "source": "BDSLW131 official folder naming"
+  },
+  {
+    "class_id": 101,
+    "dataset_label": "ভোট_Vote",
+    "bengali_label": "ভোট",
+    "english_gloss": "Vote",
+    "transliteration": "Vote",
+    "source": "BDSLW131 official folder naming"
+  },
+  {
+    "class_id": 102,
+    "dataset_label": "মঙ্গলবার_Tuesday",
+    "bengali_label": "মঙ্গলবার",
+    "english_gloss": "Tuesday",
+    "transliteration": "Tuesday",
+    "source": "BDSLW131 official folder naming"
+  },
+  {
+    "class_id": 103,
+    "dataset_label": "মরিচ_Chili",
+    "bengali_label": "মরিচ",
+    "english_gloss": "Chili",
+    "transliteration": "Chili",
+    "source": "BDSLW131 official folder naming"
+  },
+  {
+    "class_id": 104,
+    "dataset_label": "মা_Mother",
+    "bengali_label": "মা",
+    "english_gloss": "Mother",
+    "transliteration": "Mother",
+    "source": "BDSLW131 official folder naming"
+  },
+  {
+    "class_id": 105,
+    "dataset_label": "মাটি_Clay",
+    "bengali_label": "মাটি",
+    "english_gloss": "Clay",
+    "transliteration": "Clay",
+    "source": "BDSLW131 official folder naming"
+  },
+  {
+    "class_id": 106,
+    "dataset_label": "মাথা_Head",
+    "bengali_label": "মাথা",
+    "english_gloss": "Head",
+    "transliteration": "Head",
+    "source": "BDSLW131 official folder naming"
+  },
+  {
+    "class_id": 107,
+    "dataset_label": "মাথাব্যথা_Headache",
+    "bengali_label": "মাথাব্যথা",
+    "english_gloss": "Headache",
+    "transliteration": "Headache",
+    "source": "BDSLW131 official folder naming"
+  },
+  {
+    "class_id": 108,
+    "dataset_label": "মুরগি_Chicken",
+    "bengali_label": "মুরগি",
+    "english_gloss": "Chicken",
+    "transliteration": "Chicken",
+    "source": "BDSLW131 official folder naming"
+  },
+  {
+    "class_id": 109,
+    "dataset_label": "মেরামত_Repair",
+    "bengali_label": "মেরামত",
+    "english_gloss": "Repair",
+    "transliteration": "Repair",
+    "source": "BDSLW131 official folder naming"
+  },
+  {
+    "class_id": 110,
+    "dataset_label": "মোবাইল ফোন_Mobile Phone",
+    "bengali_label": "মোবাইল ফোন",
+    "english_gloss": "Mobile Phone",
+    "transliteration": "Mobile Phone",
+    "source": "BDSLW131 official folder naming"
+  },
+  {
+    "class_id": 111,
+    "dataset_label": "যোগ_Addition",
+    "bengali_label": "যোগ",
+    "english_gloss": "Addition",
+    "transliteration": "Addition",
+    "source": "BDSLW131 official folder naming"
+  },
+  {
+    "class_id": 112,
+    "dataset_label": "রবিবার_Sunday",
+    "bengali_label": "রবিবার",
+    "english_gloss": "Sunday",
+    "transliteration": "Sunday",
+    "source": "BDSLW131 official folder naming"
+  },
+  {
+    "class_id": 113,
+    "dataset_label": "রাজধানী_Capital",
+    "bengali_label": "রাজধানী",
+    "english_gloss": "Capital",
+    "transliteration": "Capital",
+    "source": "BDSLW131 official folder naming"
+  },
+  {
+    "class_id": 114,
+    "dataset_label": "শক্তি_Strength",
+    "bengali_label": "শক্তি",
+    "english_gloss": "Strength",
+    "transliteration": "Strength",
+    "source": "BDSLW131 official folder naming"
+  },
+  {
+    "class_id": 115,
+    "dataset_label": "শনিবার_Saturday",
+    "bengali_label": "শনিবার",
+    "english_gloss": "Saturday",
+    "transliteration": "Saturday",
+    "source": "BDSLW131 official folder naming"
+  },
+  {
+    "class_id": 116,
+    "dataset_label": "শপথ_Oath",
+    "bengali_label": "শপথ",
+    "english_gloss": "Oath",
+    "transliteration": "Oath",
+    "source": "BDSLW131 official folder naming"
+  },
+  {
+    "class_id": 117,
+    "dataset_label": "শিক্ষক_Teacher",
+    "bengali_label": "শিক্ষক",
+    "english_gloss": "Teacher",
+    "transliteration": "Teacher",
+    "source": "BDSLW131 official folder naming"
+  },
+  {
+    "class_id": 118,
+    "dataset_label": "শুক্রবার_Friday",
+    "bengali_label": "শুক্রবার",
+    "english_gloss": "Friday",
+    "transliteration": "Friday",
+    "source": "BDSLW131 official folder naming"
+  },
+  {
+    "class_id": 119,
+    "dataset_label": "শূন্য_Zero",
+    "bengali_label": "শূন্য",
+    "english_gloss": "Zero",
+    "transliteration": "Zero",
+    "source": "BDSLW131 official folder naming"
+  },
+  {
+    "class_id": 120,
+    "dataset_label": "সংখ্যা_Number",
+    "bengali_label": "সংখ্যা",
+    "english_gloss": "Number",
+    "transliteration": "Number",
+    "source": "BDSLW131 official folder naming"
+  },
+  {
+    "class_id": 121,
+    "dataset_label": "সময়_Time",
+    "bengali_label": "সময়",
+    "english_gloss": "Time",
+    "transliteration": "Time",
+    "source": "BDSLW131 official folder naming"
+  },
+  {
+    "class_id": 122,
+    "dataset_label": "সরকার_Government",
+    "bengali_label": "সরকার",
+    "english_gloss": "Government",
+    "transliteration": "Government",
+    "source": "BDSLW131 official folder naming"
+  },
+  {
+    "class_id": 123,
+    "dataset_label": "সহায়তা_Support",
+    "bengali_label": "সহায়তা",
+    "english_gloss": "Support",
+    "transliteration": "Support",
+    "source": "BDSLW131 official folder naming"
+  },
+  {
+    "class_id": 124,
+    "dataset_label": "সাত_Seven",
+    "bengali_label": "সাত",
+    "english_gloss": "Seven",
+    "transliteration": "Seven",
+    "source": "BDSLW131 official folder naming"
+  },
+  {
+    "class_id": 125,
+    "dataset_label": "সাহায্য_Help",
+    "bengali_label": "সাহায্য",
+    "english_gloss": "Help",
+    "transliteration": "Help",
+    "source": "BDSLW131 official folder naming"
+  },
+  {
+    "class_id": 126,
+    "dataset_label": "সুন্দর_Beautiful",
+    "bengali_label": "সুন্দর",
+    "english_gloss": "Beautiful",
+    "transliteration": "Beautiful",
+    "source": "BDSLW131 official folder naming"
+  },
+  {
+    "class_id": 127,
+    "dataset_label": "সে_He",
+    "bengali_label": "সে",
+    "english_gloss": "He",
+    "transliteration": "He",
+    "source": "BDSLW131 official folder naming"
+  },
+  {
+    "class_id": 128,
+    "dataset_label": "হাড়_Bone",
+    "bengali_label": "হাড়",
+    "english_gloss": "Bone",
+    "transliteration": "Bone",
+    "source": "BDSLW131 official folder naming"
+  },
+  {
+    "class_id": 129,
+    "dataset_label": "হাত_Hand",
+    "bengali_label": "হাত",
+    "english_gloss": "Hand",
+    "transliteration": "Hand",
+    "source": "BDSLW131 official folder naming"
+  },
+  {
+    "class_id": 130,
+    "dataset_label": "হৃদয়_Heart",
+    "bengali_label": "হৃদয়",
+    "english_gloss": "Heart",
+    "transliteration": "Heart",
+    "source": "BDSLW131 official folder naming"
+  }
+]

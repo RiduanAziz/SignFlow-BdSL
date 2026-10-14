@@ -43,10 +43,16 @@ class SignLanguageDataset(Dataset):
         if isinstance(sample.landmarks, (str, Path)):
             with np.load(str(sample.landmarks)) as loaded:
                 landmarks = loaded["landmarks"].astype(np.float32)
+                if not np.all(np.isfinite(landmarks)):
+                    raise ValueError(f"Non-finite values (NaN/Inf) found in landmarks for sample {sample.sample_id}")
                 if "mask" in loaded:
                     mask = loaded["mask"].astype(np.float32)
+                elif "visibility_mask" in loaded:
+                    mask = loaded["visibility_mask"].astype(np.float32)
         else:
             landmarks = np.asarray(sample.landmarks, dtype=np.float32)
+            if not np.all(np.isfinite(landmarks)):
+                raise ValueError(f"Non-finite values (NaN/Inf) found in landmarks for sample {sample.sample_id}")
 
         label_index = self.label_to_index[sample.label]
         return {
@@ -59,16 +65,22 @@ class SignLanguageDataset(Dataset):
             "metadata": sample.metadata,
         }
 
+
 def build_dataset_from_manifest(
     manifest_path: str | Path,
     landmarks_dir: str | Path,
     allowed_classes: list[str] | None = None,
-) -> list[SignSample]:
+    max_missing_ratio: float | None = None,
+    return_accounting: bool = False,
+) -> list[SignSample] | tuple[list[SignSample], dict[str, Any]]:
     import csv
     import json
     from pathlib import Path
 
     manifest_p = Path(manifest_path)
+    if not manifest_p.is_file():
+        raise FileNotFoundError(f"Manifest file not found: {manifest_p}")
+
     if manifest_p.suffix.lower() == ".csv":
         with open(manifest_p, "r", encoding="utf-8") as f:
             manifest = list(csv.DictReader(f))
@@ -77,18 +89,24 @@ def build_dataset_from_manifest(
             manifest = json.load(f)
 
     landmarks_root = Path(landmarks_dir)
-    samples = []
+    samples: list[SignSample] = []
+    missing_sample_ids: list[str] = []
+    corrupt_sample_ids: list[str] = []
+    allowed_count = 0
 
     for entry in manifest:
         label = entry.get("class_name") or entry.get("label", "")
         if allowed_classes and label not in allowed_classes:
             continue
+        allowed_count += 1
 
         sample_id = entry["sample_id"]
         npz_path = landmarks_root / f"{sample_id}.npz"
         if not npz_path.exists():
+            missing_sample_ids.append(sample_id)
             continue
 
+        # Optional fast integrity check
         samples.append(
             SignSample(
                 sample_id=sample_id,
@@ -102,6 +120,29 @@ def build_dataset_from_manifest(
                 },
             )
         )
+
+    accounting = {
+        "manifest_path": str(manifest_p),
+        "total_records": len(manifest),
+        "allowed_records": allowed_count,
+        "loaded_samples": len(samples),
+        "missing_count": len(missing_sample_ids),
+        "missing_sample_ids": missing_sample_ids,
+        "corrupt_count": len(corrupt_sample_ids),
+        "corrupt_sample_ids": corrupt_sample_ids,
+    }
+
+    if max_missing_ratio is not None and allowed_count > 0:
+        actual_missing_ratio = len(missing_sample_ids) / allowed_count
+        if actual_missing_ratio > max_missing_ratio:
+            raise FileNotFoundError(
+                f"Missing feature files ({len(missing_sample_ids)}/{allowed_count}, "
+                f"{actual_missing_ratio:.1%}) exceeded threshold ({max_missing_ratio:.1%}) "
+                f"in {landmarks_root}. Missing sample IDs: {missing_sample_ids[:10]}"
+            )
+
+    if return_accounting:
+        return samples, accounting
     return samples
 
 

@@ -80,3 +80,14 @@ Every evaluation run exports traceability files to `results/`:
 - `results/bdslw131_<model>_per_class_metrics.csv`: Per-class precision, recall, and F1.
 - `results/bdslw131_<model>_confusion_matrix.csv`: Full $131 \times 131$ confusion matrix.
 - `results/bdslw131_robustness_report.json`: Corruption benchmarks across severities.
+
+---
+
+## 6. Historical Results & Regeneration Protocol
+
+> [!WARNING]
+> **Historical Artifact Notice**: Any preliminary benchmark outputs generated prior to the fail-closed split enforcement (where `scripts/train.py` could default to the full discovery manifest) must be marked as historical and discarded for thesis publication. All formal academic benchmarks must be freshly executed using:
+> - Canonical Training Split: `data/manifests/bdslw131_train_manifest.json`
+> - Canonical Validation Split: `data/manifests/bdslw131_val_manifest.json`
+> - Held-Out Test Split: `data/manifests/bdslw131_test_manifest.json`
+> - Evaluation reports must record SHA-256 provenance hashes confirming disjointness.

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import logging
 from pathlib import Path
@@ -23,11 +24,58 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(me
 logger = logging.getLogger(__name__)
 
 
+def compute_file_sha256(path: Path | str) -> str:
+    """Compute SHA-256 hash of a file for provenance tracking."""
+    p = Path(path)
+    if not p.is_file():
+        return ""
+    h = hashlib.sha256()
+    with open(p, "rb") as f:
+        while chunk := f.read(65536):
+            h.update(chunk)
+    return h.hexdigest()
+
+
+def resolve_test_manifest(
+    manifest_arg: str | None,
+    config_test_manifest: str | None = None,
+) -> Path:
+    """Resolve held-out test manifest, failing closed if full dataset manifest is passed."""
+    candidate_path: Path | None = None
+
+    if manifest_arg and manifest_arg != "data/manifests/test_manifest.json":
+        candidate_path = Path(manifest_arg)
+    elif config_test_manifest and Path(config_test_manifest).is_file():
+        candidate_path = Path(config_test_manifest)
+    elif Path("data/manifests/bdslw131_test_manifest.json").is_file():
+        candidate_path = Path("data/manifests/bdslw131_test_manifest.json")
+    elif Path("data/manifests/test_manifest.json").is_file():
+        candidate_path = Path("data/manifests/test_manifest.json")
+    else:
+        candidate_path = Path(manifest_arg or "data/manifests/bdslw131_test_manifest.json")
+
+    # Strict check: never evaluate on the full discovery manifest
+    cand_str = str(candidate_path).lower().replace("\\", "/")
+    if "dataset_manifest" in cand_str or cand_str.endswith(".csv"):
+        raise ValueError(
+            f"Held-out robustness evaluation requires a dedicated test split manifest (e.g. data/manifests/bdslw131_test_manifest.json), "
+            f"but full dataset manifest '{candidate_path}' was supplied. Evaluation on full discovery manifest is prohibited to prevent data leakage."
+        )
+
+    if not candidate_path.is_file():
+        raise FileNotFoundError(
+            f"Test manifest does not exist at {candidate_path}. "
+            "Please generate canonical splits using: python scripts/split_dataset.py"
+        )
+
+    return candidate_path
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="Evaluate model robustness under spatial and temporal disturbances.")
     parser.add_argument("--config", default="configs/base.yaml", help="Path to config")
-    parser.add_argument("--manifest", default="data/manifests/test_manifest.json", help="Path to test manifest")
-    parser.add_argument("--landmarks-dir", default="data/landmarks", help="Path to landmarks directory")
+    parser.add_argument("--manifest", "--test-manifest", default=None, dest="manifest", help="Path to held-out test manifest")
+    parser.add_argument("--landmarks-dir", default=None, help="Path to landmarks directory")
     parser.add_argument("--checkpoint", "--model-path", required=True, dest="checkpoint", help="Path to trained checkpoint (.pt)")
     parser.add_argument("--output", default="results/robustness/report.json", help="Output JSON report path")
     parser.add_argument("--device", default="cpu", help="Device to use")
@@ -81,17 +129,32 @@ def main() -> None:
     raw_feature_dim = input_dim // 3 if input_dim >= 4977 else input_dim
     pipeline = LandmarkPipeline(feature_dim=raw_feature_dim, sequence_length=seq_len)
 
-    # 3. Load Held-Out Test Samples
+    # 3. Resolve Held-Out Test Manifest & Landmarks Directory
+    config_test_manifest = getattr(config.dataset, "test_manifest", None)
+    resolved_manifest = resolve_test_manifest(args.manifest, config_test_manifest)
+
+    resolved_landmarks_dir = args.landmarks_dir or getattr(config.dataset, "landmarks_dir", "data/landmarks")
+    if not Path(resolved_landmarks_dir).is_dir():
+        alt_cand = Path("data/landmarks")
+        if alt_cand.is_dir():
+            resolved_landmarks_dir = str(alt_cand)
+
+    logger.info("Robustness Evaluation Configuration:")
+    logger.info("  Checkpoint:    %s", checkpoint_path)
+    logger.info("  Test Manifest: %s", resolved_manifest)
+    logger.info("  Landmarks Dir: %s", resolved_landmarks_dir)
+
+    # 4. Load Held-Out Test Samples
     test_samples = build_dataset_from_manifest(
-        manifest_path=args.manifest,
-        landmarks_dir=args.landmarks_dir,
+        manifest_path=str(resolved_manifest),
+        landmarks_dir=str(resolved_landmarks_dir),
         allowed_classes=class_names,
     )
     if args.limit:
         test_samples = test_samples[: args.limit]
 
     if not test_samples:
-        raise ValueError(f"No test samples found in {args.manifest} and {args.landmarks_dir}")
+        raise ValueError(f"No test samples found in {resolved_manifest} and {resolved_landmarks_dir}")
 
     logger.info("Evaluating robustness on %d held-out test samples...", len(test_samples))
 
@@ -210,8 +273,17 @@ def main() -> None:
     output_path = Path(args.output)
     output_path.parent.mkdir(parents=True, exist_ok=True)
     report_data = {
-        "checkpoint": str(checkpoint_path),
-        "manifest": str(args.manifest),
+        "provenance": {
+            "checkpoint": str(checkpoint_path),
+            "checkpoint_sha256": compute_file_sha256(checkpoint_path),
+            "test_manifest": str(resolved_manifest),
+            "manifest_sha256": compute_file_sha256(resolved_manifest),
+            "dataset_modality": "still_images (BDSLW131)",
+            "methodology_note": (
+                "BDSLW131 consists of static sign images. Spatial noise evaluates geometric deformation "
+                "tolerance on static landmarks. Temporal perturbations evaluate invariance under repeated-frame sequences."
+            ),
+        },
         "clean_accuracy": clean_acc,
         "sample_count": len(targets),
         "results": robustness_records,

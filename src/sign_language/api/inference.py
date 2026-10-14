@@ -166,7 +166,7 @@ class RealTimePredictor:
         """Backward-compatible predict method returning raw output logits."""
         return self.predict_logits(sequence, mask=mask)
 
-    def predict_label(
+    def predict_with_logits(
         self,
         sequence: np.ndarray,
         mask: np.ndarray | None = None,
@@ -174,7 +174,7 @@ class RealTimePredictor:
         calibrate: bool = True,
         calibration_alpha: float = 0.85,
     ) -> dict[str, Any]:
-        """Predict class label, confidence score, top-k candidates, and probabilities."""
+        """Single-forward-pass inference producing raw logits, probabilities, and class metadata."""
         logits = self.predict_logits(sequence, mask=mask)
 
         # Apply prior debiasing if available to prevent degenerate class saturation
@@ -246,4 +246,22 @@ class RealTimePredictor:
             "meets_threshold": meets_threshold,
             "probabilities": probs.tolist(),
             "top_k": top_k,
+            "logits": [float(v) for v in logits],
         }
+
+    def predict_label(
+        self,
+        sequence: np.ndarray,
+        mask: np.ndarray | None = None,
+        confidence_threshold: float = 0.0,
+        calibrate: bool = True,
+        calibration_alpha: float = 0.85,
+    ) -> dict[str, Any]:
+        """Predict class label, confidence score, top-k candidates, and probabilities."""
+        return self.predict_with_logits(
+            sequence=sequence,
+            mask=mask,
+            confidence_threshold=confidence_threshold,
+            calibrate=calibrate,
+            calibration_alpha=calibration_alpha,
+        )

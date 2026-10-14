@@ -8,7 +8,6 @@ from pathlib import Path
 from typing import Any
 
 from .dataset import SignSample
-from .manifest import DatasetManifestEntry
 
 
 def validate_signer_assignments(
@@ -38,23 +37,35 @@ def validate_signer_assignments(
 
 
 def split_manifest_by_signer(
-    manifest: list[DatasetManifestEntry],
+    manifest: list[Any],
     train_signers: set[str] | list[str] | None = None,
     val_signers: set[str] | list[str] | None = None,
     test_signers: set[str] | list[str] | None = None,
     seed: int = 42,
-) -> tuple[list[DatasetManifestEntry], list[DatasetManifestEntry], list[DatasetManifestEntry]]:
+) -> tuple[list[Any], list[Any], list[Any]]:
     entries = list(manifest)
     if not entries:
         return [], [], []
 
+    def _get(item: Any, key: str) -> str:
+        if isinstance(item, dict):
+            return str(item.get(key, ""))
+        return str(getattr(item, key, ""))
+
+    def _with_split(item: Any, split_val: str) -> Any:
+        if isinstance(item, dict):
+            copy_item = dict(item)
+            copy_item["split"] = split_val
+            return copy_item
+        return replace(item, split=split_val)
+
     # Check for duplicate sample IDs
-    sample_ids = [item.sample_id for item in entries]
+    sample_ids = [_get(item, "sample_id") for item in entries]
     if len(sample_ids) != len(set(sample_ids)):
         duplicates = [sid for sid, count in collections.Counter(sample_ids).items() if count > 1]
         raise ValueError(f"Duplicate sample IDs detected in manifest: {duplicates[:10]}")
 
-    all_signers = sorted({item.signer_id for item in entries})
+    all_signers = sorted({_get(item, "signer_id") for item in entries})
     train_signers = list(train_signers) if train_signers is not None else []
     val_signers = list(val_signers) if val_signers is not None else []
     test_signers = list(test_signers) if test_signers is not None else []
@@ -80,29 +91,42 @@ def split_manifest_by_signer(
         set(all_signers), train_signer_set, val_signer_set, test_signer_set
     )
 
-    train = [replace(item, split="train") for item in entries if item.signer_id in train_signer_set]
-    val = [replace(item, split="validation") for item in entries if item.signer_id in val_signer_set]
-    test = [replace(item, split="test") for item in entries if item.signer_id in test_signer_set]
+    train = [_with_split(item, "train") for item in entries if _get(item, "signer_id") in train_signer_set]
+    val = [_with_split(item, "validation") for item in entries if _get(item, "signer_id") in val_signer_set]
+    test = [_with_split(item, "test") for item in entries if _get(item, "signer_id") in test_signer_set]
 
     return train, val, test
 
 
 def write_manifest_splits(
-    train: list[DatasetManifestEntry],
-    validation: list[DatasetManifestEntry],
-    test: list[DatasetManifestEntry],
+    train: list[Any],
+    validation: list[Any],
+    test: list[Any],
     output_dir: str | Path,
+    prefix: str = "",
 ) -> dict[str, Path]:
     output_root = Path(output_dir)
     output_root.mkdir(parents=True, exist_ok=True)
+    pfx = f"{prefix}_" if prefix and not prefix.endswith("_") else (prefix if prefix else "")
     outputs = {
-        "train": output_root / "train_manifest.json",
-        "validation": output_root / "validation_manifest.json",
-        "test": output_root / "test_manifest.json",
+        "train": output_root / f"{pfx}train_manifest.json",
+        "validation": output_root / f"{pfx}val_manifest.json",
+        "val": output_root / f"{pfx}val_manifest.json",
+        "test": output_root / f"{pfx}test_manifest.json",
     }
-    for name, entries in (("train", train), ("validation", validation), ("test", test)):
-        with outputs[name].open("w", encoding="utf-8") as handle:
-            json.dump([entry.__dict__ for entry in entries], handle, indent=2)
+    for name, entries in (("train", train), ("val", validation), ("test", test)):
+        target_path = outputs[name]
+        data = [entry.__dict__ if hasattr(entry, "__dict__") and not isinstance(entry, dict) else entry for entry in entries]
+        with target_path.open("w", encoding="utf-8") as handle:
+            json.dump(data, handle, ensure_ascii=False, indent=2)
+
+    # For legacy backward compatibility when no prefix is used
+    if not pfx:
+        legacy_val = output_root / "validation_manifest.json"
+        data_val = [entry.__dict__ if hasattr(entry, "__dict__") and not isinstance(entry, dict) else entry for entry in validation]
+        with legacy_val.open("w", encoding="utf-8") as handle:
+            json.dump(data_val, handle, ensure_ascii=False, indent=2)
+
     return outputs
 
 
@@ -185,3 +209,8 @@ def split_manifest_stratified(
         test.extend(shuffled[n_train + n_val :])
 
     return train, val, test
+
+
+# Canonical aliases
+split_dataset_stratified = split_manifest_stratified
+split_dataset_by_signer = split_manifest_by_signer

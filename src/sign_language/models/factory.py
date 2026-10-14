@@ -19,8 +19,10 @@ def build_model(config: ExperimentConfig) -> torch.nn.Module:
     if name in {"mlp", "baseline"}:
         return MLPClassifier(
             input_dim=params.input_dim,
-            seq_len=params.sequence_length,
+            hidden_dim=getattr(params, "hidden_dim", 128),
             num_classes=params.num_classes,
+            seq_len=params.sequence_length,
+            dropout=getattr(params, "dropout", 0.0),
         )
     if name == "lstm":
         return LSTMClassifier(

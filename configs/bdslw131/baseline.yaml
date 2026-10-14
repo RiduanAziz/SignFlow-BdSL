@@ -3,6 +3,13 @@ seed: 42
 checkpoint_dir: checkpoints/bdslw131
 results_dir: results/bdslw131
 
+dataset:
+  train_manifest: data/manifests/bdslw131_train_manifest.json
+  val_manifest: data/manifests/bdslw131_val_manifest.json
+  test_manifest: data/manifests/bdslw131_test_manifest.json
+  landmarks_dir: data/landmarks
+  num_classes: 131
+
 model:
   name: baseline
   input_dim: 1659
