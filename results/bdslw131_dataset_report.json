@@ -1,0 +1,25 @@
+{
+  "dataset_name": "BDSLW131 (Bangla Sign Language Word Dataset)",
+  "source_url": "https://www.kaggle.com/datasets/musaddiquealierfan/bdslw131-bangla-sign-language-word-dataset",
+  "license": "Creative Commons Attribution 4.0 International (CC BY 4.0)",
+  "modality": "still_images",
+  "file_format": "JPG",
+  "raw_directory": "F:\\SignFlow-BdSL\\data\\raw\\bangla-sign-dataset",
+  "total_classes": 131,
+  "total_images_discovered": 29930,
+  "valid_labeled_samples": 29930,
+  "excluded_corrupt_samples": 0,
+  "corrupt_samples": [],
+  "class_balance_summary": {
+    "min_samples_per_class": 140,
+    "max_samples_per_class": 230,
+    "mean_samples_per_class": 228.47,
+    "median_samples_per_class": 230.0
+  },
+  "signer_information": {
+    "signer_ids_available": false,
+    "note": "Metadata does not supply individual signer identifiers. Stratified splitting by class is enforced to prevent class leakage."
+  },
+  "image_resolution_profiles": [],
+  "total_dataset_size_mb": 134907.92
+}

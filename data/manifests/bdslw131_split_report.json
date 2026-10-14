@@ -1,0 +1,11 @@
+{
+  "split_type": "stratified_by_class",
+  "seed": 42,
+  "total_samples": 29930,
+  "train_samples": 20950,
+  "val_samples": 4431,
+  "test_samples": 4549,
+  "train_ratio": 0.7,
+  "val_ratio": 0.148,
+  "test_ratio": 0.152
+}
