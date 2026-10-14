@@ -40,6 +40,7 @@ export interface QualityCoachMetrics {
 }
 
 export interface HandLandmarksPayload {
+  frame_id?: number;
   left_landmarks: LandmarkPoint[];
   right_landmarks: LandmarkPoint[];
   left_box: BoundingBox | null;
@@ -53,6 +54,14 @@ export interface HandLandmarksPayload {
   quality: QualityCoachMetrics;
   state_code: RecognitionStateCode;
   timestamp_ms: number;
+}
+
+export interface FrameProcessedAck {
+  type: 'frame_processed';
+  frame_id: number;
+  timestamp_ms: number;
+  processing_ms: number;
+  success: boolean;
 }
 
 export interface ModelInfo {
@@ -74,8 +83,12 @@ export interface HealthStatus {
   status: 'ok' | 'degraded' | 'error';
   process_alive: boolean;
   backend_initialized: boolean;
+  websocket_available?: boolean;
+  mediapipe_asset_present?: boolean;
+  mediapipe_initialized?: boolean;
   mediapipe_available: boolean;
   trained_model_loaded: boolean;
+  checkpoint_compatible?: boolean;
   inference_ready: boolean;
   checkpoint_path: string | null;
   error: string | null;

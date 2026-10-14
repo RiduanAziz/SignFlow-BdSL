@@ -88,3 +88,58 @@ class LandmarkSequence:
             raise ValueError("landmarks and mask must have the same shape")
         if self.landmarks.ndim != 2:
             raise ValueError("landmarks and mask must have shape [T, F]")
+
+
+def compute_landmark_bounding_box(
+    coordinates: np.ndarray,
+    point_mask: np.ndarray,
+    padding: float = 0.05,
+) -> dict[str, float] | None:
+    """Compute normalized bounding box (xmin, ymin, xmax, ymax, width, height) from valid landmark points.
+
+    Coordinates must be [N, 3] or [N, 2] with normalized spatial range [0.0, 1.0].
+    Returns None if no valid points exist or if box dimensions are degenerate.
+    """
+    coords = np.asarray(coordinates, dtype=np.float32)
+    mask = np.asarray(point_mask, dtype=np.float32)
+
+    valid_indices = np.where(mask > 0.5)[0]
+    if len(valid_indices) == 0:
+        return None
+
+    pts = coords[valid_indices]
+    raw_xmin = float(np.min(pts[:, 0]))
+    raw_xmax = float(np.max(pts[:, 0]))
+    raw_ymin = float(np.min(pts[:, 1]))
+    raw_ymax = float(np.max(pts[:, 1]))
+
+    w = max(0.0, raw_xmax - raw_xmin)
+    h = max(0.0, raw_ymax - raw_ymin)
+
+    if padding > 0.0:
+        pad_x = max(0.005, w * padding)
+        pad_y = max(0.005, h * padding)
+    else:
+        pad_x = 0.0
+        pad_y = 0.0
+
+    xmin = max(0.0, min(1.0, raw_xmin - pad_x))
+    xmax = max(0.0, min(1.0, raw_xmax + pad_x))
+    ymin = max(0.0, min(1.0, raw_ymin - pad_y))
+    ymax = max(0.0, min(1.0, raw_ymax + pad_y))
+
+    final_w = xmax - xmin
+    final_h = ymax - ymin
+
+    if final_w < 1e-4 or final_h < 1e-4:
+        return None
+
+    return {
+        "xmin": float(round(xmin, 4)),
+        "ymin": float(round(ymin, 4)),
+        "xmax": float(round(xmax, 4)),
+        "ymax": float(round(ymax, 4)),
+        "width": float(round(final_w, 4)),
+        "height": float(round(final_h, 4)),
+    }
+

@@ -72,6 +72,7 @@ export const App: React.FC = () => {
   const [prediction, setPrediction] = useState<LivePrediction | null>(null);
   const [candidate, setCandidate] = useState<WordCandidate | null>(null);
   const [performance, setPerformance] = useState<PerformanceMetrics | null>(null);
+  const [lastProcessedFrameId, setLastProcessedFrameId] = useState<number>(0);
 
   // Advanced Visuals & Quality States
   const [leftLandmarks, setLeftLandmarks] = useState<LandmarkPoint[]>([]);
@@ -245,6 +246,20 @@ export const App: React.FC = () => {
               setRightBox(msg.right_box || null);
               if (msg.quality) setQuality(msg.quality);
               if (msg.state_code) setStateCode(msg.state_code);
+              setLandmarksStatus({
+                hands_detected: Boolean(msg.hands_detected),
+                left_hand: Boolean(msg.left_hand),
+                right_hand: Boolean(msg.right_hand),
+                pose: Boolean(msg.pose),
+                face: Boolean(msg.face),
+                valid_points: Number(msg.valid_points || 0),
+              });
+              break;
+
+            case 'frame_processed':
+              if (typeof msg.frame_id === 'number') {
+                setLastProcessedFrameId(msg.frame_id);
+              }
               break;
 
             case 'live_prediction':
@@ -331,13 +346,14 @@ export const App: React.FC = () => {
 
   // Frame transmission
   const handleFrameCaptured = useCallback(
-    (imageDataUrl: string, timestampMs: number) => {
+    (imageDataUrl: string, timestampMs: number, frameId?: number) => {
       if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
         wsRef.current.send(
           JSON.stringify({
             type: 'frame',
             data: imageDataUrl,
             timestamp_ms: timestampMs,
+            frame_id: frameId,
           })
         );
       }
@@ -451,6 +467,7 @@ export const App: React.FC = () => {
           <div className="lg:col-span-7">
             <CameraPanel
               onFrameCaptured={handleFrameCaptured}
+              lastProcessedFrameId={lastProcessedFrameId}
               isStreaming={isStreaming}
               setIsStreaming={setIsStreaming}
               landmarksStatus={landmarksStatus}

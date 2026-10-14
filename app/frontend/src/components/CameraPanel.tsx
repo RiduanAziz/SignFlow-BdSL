@@ -26,7 +26,8 @@ import {
 } from '../types';
 
 interface CameraPanelProps {
-  onFrameCaptured: (imageDataUrl: string, timestampMs: number) => void;
+  onFrameCaptured: (imageDataUrl: string, timestampMs: number, frameId: number) => void;
+  lastProcessedFrameId?: number;
   isStreaming: boolean;
   setIsStreaming: (streaming: boolean) => void;
   landmarksStatus: LandmarksStatus | null;
@@ -75,6 +76,7 @@ const HAND_CONNECTIONS = [
 
 export const CameraPanel: React.FC<CameraPanelProps> = ({
   onFrameCaptured,
+  lastProcessedFrameId,
   isStreaming,
   setIsStreaming,
   landmarksStatus,
@@ -179,13 +181,22 @@ export const CameraPanel: React.FC<CameraPanelProps> = ({
     setIsStreaming(false);
   };
 
-  // In-flight transmission lock to prevent socket buffer backlog
+  // Monotonic frame counter and in-flight tracking
+  const frameCounterRef = useRef<number>(0);
   const inFlightRef = useRef<boolean>(false);
+  const inFlightFrameIdRef = useRef<number>(0);
+  const watchdogTimeoutRef = useRef<number | null>(null);
 
-  // Release in-flight lock whenever server delivers frame results
+  // Release in-flight lock strictly when matching or newer frame_processed acknowledgement arrives
   useEffect(() => {
-    inFlightRef.current = false;
-  }, [leftLandmarks, rightLandmarks, landmarksStatus]);
+    if (lastProcessedFrameId !== undefined && lastProcessedFrameId >= inFlightFrameIdRef.current) {
+      inFlightRef.current = false;
+      if (watchdogTimeoutRef.current) {
+        window.clearTimeout(watchdogTimeoutRef.current);
+        watchdogTimeoutRef.current = null;
+      }
+    }
+  }, [lastProcessedFrameId]);
 
   // Frame Capture Loop (Optimized for real-time responsiveness)
   useEffect(() => {
@@ -194,6 +205,11 @@ export const CameraPanel: React.FC<CameraPanelProps> = ({
         window.clearInterval(intervalRef.current);
         intervalRef.current = null;
       }
+      if (watchdogTimeoutRef.current) {
+        window.clearTimeout(watchdogTimeoutRef.current);
+        watchdogTimeoutRef.current = null;
+      }
+      inFlightRef.current = false;
       return;
     }
 
@@ -210,9 +226,9 @@ export const CameraPanel: React.FC<CameraPanelProps> = ({
       const width = video.videoWidth || 640;
       const height = video.videoHeight || 480;
 
-      // High-speed 320x240 frame (preserves all hand landmarks with 3x faster encoding)
-      const targetW = 320;
-      const targetH = Math.round((height / width) * 320);
+      // 480px width: crisp finger clarity and responsive encoding
+      const targetW = 480;
+      const targetH = Math.round((height / width) * 480);
 
       canvas.width = targetW;
       canvas.height = targetH;
@@ -221,19 +237,31 @@ export const CameraPanel: React.FC<CameraPanelProps> = ({
 
       ctx.drawImage(video, 0, 0, targetW, targetH);
       inFlightRef.current = true;
-      const dataUrl = canvas.toDataURL('image/jpeg', 0.65);
-      onFrameCaptured(dataUrl, Date.now());
+      frameCounterRef.current += 1;
+      const currentFrameId = frameCounterRef.current;
+      inFlightFrameIdRef.current = currentFrameId;
 
-      // Safety timeout to reset in-flight flag if network delays
-      window.setTimeout(() => {
+      const dataUrl = canvas.toDataURL('image/jpeg', 0.70);
+      onFrameCaptured(dataUrl, Date.now(), currentFrameId);
+
+      // Stall watchdog: ONLY release lock if server has stalled for > 2000ms
+      if (watchdogTimeoutRef.current) {
+        window.clearTimeout(watchdogTimeoutRef.current);
+      }
+      watchdogTimeoutRef.current = window.setTimeout(() => {
         inFlightRef.current = false;
-      }, 120);
+        watchdogTimeoutRef.current = null;
+      }, 2000);
     }, intervalMs);
 
     return () => {
       if (intervalRef.current) {
         window.clearInterval(intervalRef.current);
         intervalRef.current = null;
+      }
+      if (watchdogTimeoutRef.current) {
+        window.clearTimeout(watchdogTimeoutRef.current);
+        watchdogTimeoutRef.current = null;
       }
     };
   }, [cameraActive, isStreaming, targetFps, onFrameCaptured]);
@@ -389,6 +417,8 @@ export const CameraPanel: React.FC<CameraPanelProps> = ({
     }
 
     const sb = smoothBoxRef.current;
+    if (sb.width <= 0.01 || sb.height <= 0.01) return;
+
     const vw = video.videoWidth || 640;
     const vh = video.videoHeight || 480;
 
@@ -396,6 +426,8 @@ export const CameraPanel: React.FC<CameraPanelProps> = ({
     const sy = Math.max(0, sb.ymin * vh);
     const sw = Math.min(vw - sx, sb.width * vw);
     const sh = Math.min(vh - sy, sb.height * vh);
+
+    if (sw < 5 || sh < 5) return;
 
     const cw = canvas.width;
     const ch = canvas.height;
@@ -628,22 +660,28 @@ export const CameraPanel: React.FC<CameraPanelProps> = ({
                 </div>
 
                 {/* Bottom Modality Status Chips */}
-                <div className="flex items-center space-x-2">
-                  <span
-                    className={`text-[10px] px-2 py-0.5 rounded font-mono ${
-                      landmarksStatus?.left_hand ? 'bg-indigo-500/80 text-white' : 'bg-slate-800/80 text-slate-400'
-                    }`}
-                  >
-                    L-Hand: {landmarksStatus?.left_hand ? 'Tracking' : 'None'}
-                  </span>
-                  <span
-                    className={`text-[10px] px-2 py-0.5 rounded font-mono ${
-                      landmarksStatus?.right_hand ? 'bg-teal-500/80 text-white' : 'bg-slate-800/80 text-slate-400'
-                    }`}
-                  >
-                    R-Hand: {landmarksStatus?.right_hand ? 'Tracking' : 'None'}
-                  </span>
-                </div>
+                {(() => {
+                  const hasLeft = Boolean(landmarksStatus?.left_hand || leftLandmarks.some((p) => p.valid));
+                  const hasRight = Boolean(landmarksStatus?.right_hand || rightLandmarks.some((p) => p.valid));
+                  return (
+                    <div className="flex items-center space-x-2">
+                      <span
+                        className={`text-[10px] px-2 py-0.5 rounded font-mono ${
+                          hasLeft ? 'bg-indigo-500/80 text-white' : 'bg-slate-800/80 text-slate-400'
+                        }`}
+                      >
+                        L-Hand: {hasLeft ? 'Tracking' : 'None'}
+                      </span>
+                      <span
+                        className={`text-[10px] px-2 py-0.5 rounded font-mono ${
+                          hasRight ? 'bg-teal-500/80 text-white' : 'bg-slate-800/80 text-slate-400'
+                        }`}
+                      >
+                        R-Hand: {hasRight ? 'Tracking' : 'None'}
+                      </span>
+                    </div>
+                  );
+                })()}
               </div>
             )}
           </div>

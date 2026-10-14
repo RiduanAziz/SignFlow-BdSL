@@ -197,6 +197,16 @@ npm.cmd run dev
 ```
 Open [`http://127.0.0.1:5173/`](http://127.0.0.1:5173/) in your web browser.
 
+### 3. MediaPipe Standalone Hand Detection Diagnostic
+Verify camera and hand detection independently before launching the full recognizer:
+```powershell
+# Live webcam preview with hand skeleton and bounding boxes (press Q to exit):
+python scripts/diagnose_detection.py --source 0
+
+# Test detection on a single image file without GUI:
+python scripts/diagnose_detection.py --image path/to/sample.jpg --no-gui
+```
+
 ---
 
 ## 7. Automated Testing Suite
@@ -204,10 +214,13 @@ Open [`http://127.0.0.1:5173/`](http://127.0.0.1:5173/) in your web browser.
 The repository includes comprehensive test suites across backend ML models, APIs, and the frontend web app:
 
 ```powershell
-# Run backend unit and regression tests
-python -m pytest tests/test_bdslw131_pipeline.py tests/test_api.py -v
+# Run all backend regression and pipeline tests (79 tests)
+python -m pytest tests/ -v
 
-# Run frontend Vitest test suite
+# Run real-time recognition repair regression suite
+python -m pytest tests/test_realtime_repair.py -v
+
+# Run frontend Vitest test suite (12 tests)
 cd app/frontend
 npm.cmd test -- --run
 
@@ -219,6 +232,8 @@ npm.cmd run build
 
 ## 8. Documentation Index
 
+- [`docs/REALTIME_RECOGNITION_AUDIT.md`](docs/REALTIME_RECOGNITION_AUDIT.md): Baseline audit of live recognition flow, buffer contradictions, and hand detection bugs.
+- [`docs/REALTIME_RECOGNITION_FIX_LOG.md`](docs/REALTIME_RECOGNITION_FIX_LOG.md): Comprehensive fix log and verification matrix for Phases 1-13.
 - [`docs/BDSL_MIGRATION_AUDIT.md`](docs/BDSL_MIGRATION_AUDIT.md): Initial repository audit, component reusability matrix, and baseline contracts.
 - [`docs/BDSL_MIGRATION_PLAN.md`](docs/BDSL_MIGRATION_PLAN.md): 14-phase systematic technical migration plan.
 - [`docs/BDSL_DATASET_CARD.md`](docs/BDSL_DATASET_CARD.md): Comprehensive dataset card for BDSLW131 (provenance, class distribution, split design, ethics).

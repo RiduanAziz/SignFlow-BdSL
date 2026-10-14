@@ -20,6 +20,7 @@ from pydantic import BaseModel, Field
 
 from sign_language.api.inference import RealTimePredictor, create_prediction_payload
 from sign_language.landmarks.extractor import LandmarkExtractor
+from sign_language.landmarks.schema import compute_landmark_bounding_box
 from sign_language.robustness import apply_spatial_noise, apply_temporal_noise
 
 logger = logging.getLogger(__name__)
@@ -77,23 +78,30 @@ async def lifespan(app: FastAPI):
         _init_error = str(exc)
         logger.warning("Failed to initialize predictor at startup: %s", exc)
 
-    # Initialize LandmarkExtractor
+    # Initialize LandmarkExtractor eagerly
     task_path = Path(mediapipe_asset)
     if task_path.is_file():
         try:
+            resolved_task = task_path.resolve()
+            logger.info("Initializing MediaPipe task asset from: %s", resolved_task)
             rep = _predictor.config.dataset.feature_representation if _predictor else "holistic"
-            _extractor = LandmarkExtractor(
-                model_asset_path=task_path,
+            extractor_inst = LandmarkExtractor(
+                model_asset_path=resolved_task,
                 representation=rep,
                 running_mode="image",
             )
+            # Eagerly confirm the landmarker is created and valid
+            extractor_inst._get_landmarker()
+            _extractor = extractor_inst
             _extractor_error = None
-            logger.info("LandmarkExtractor successfully initialized with %s", task_path)
+            logger.info("MediaPipe HolisticLandmarker successfully initialized from %s", resolved_task)
         except Exception as exc:
-            _extractor_error = str(exc)
+            _extractor = None
+            _extractor_error = f"Failed to initialize MediaPipe HolisticLandmarker: {exc}"
             logger.warning("Failed to initialize LandmarkExtractor: %s", exc)
     else:
-        _extractor_error = f"MediaPipe asset not found at {task_path}"
+        _extractor = None
+        _extractor_error = f"MediaPipe asset not found at {task_path.resolve()}"
         logger.info("LandmarkExtractor disabled: %s", _extractor_error)
 
     yield
@@ -104,6 +112,8 @@ async def lifespan(app: FastAPI):
             _extractor.close()
         except Exception as exc:
             logger.debug("Error closing extractor on shutdown: %s", exc)
+        finally:
+            _extractor = None
 
 
 app = FastAPI(
@@ -158,34 +168,62 @@ class PredictionRequest(BaseModel):
 
 @app.get("/health")
 def health() -> dict[str, Any]:
-    mediapipe_ready = _extractor is not None and getattr(_extractor, "_landmarker", None) is not None
-    if _extractor is not None and not mediapipe_ready:
-        # Check if model asset file exists even if landmarker not yet lazily created
-        mediapipe_ready = (
-            _extractor.model_asset_path is not None and _extractor.model_asset_path.is_file()
-        )
+    mediapipe_asset_path = os.environ.get("MEDIAPIPE_ASSET_PATH", "models/mediapipe/holistic_landmarker.task")
+    asset_present = Path(mediapipe_asset_path).is_file()
+    mediapipe_initialized = (
+        _extractor is not None
+        and getattr(_extractor, "_landmarker", None) is not None
+        and _extractor_error is None
+    )
 
-    model_ready = (
+    model_loaded = (
         _predictor is not None
         and getattr(_predictor, "model", None) is not None
         and _init_error is None
     )
 
-    if model_ready and mediapipe_ready:
+    checkpoint_compatible = False
+    if model_loaded and _predictor is not None:
+        checkpoint_compatible = (
+            getattr(_predictor, "num_classes", 0) > 0
+            and getattr(_predictor, "input_dim", 0) > 0
+        )
+
+    inference_ready = mediapipe_initialized and model_loaded and checkpoint_compatible
+
+    if inference_ready:
         overall_status = "ok"
-    elif model_ready or mediapipe_ready:
+    elif model_loaded or mediapipe_initialized:
         overall_status = "degraded"
     else:
         overall_status = "error"
+
+    model_info_dict = None
+    if _predictor is not None and model_loaded:
+        model_info_dict = {
+            "name": getattr(_predictor.config.model, "name", "unknown"),
+            "architecture": _predictor.model.__class__.__name__,
+            "num_classes": _predictor.num_classes,
+            "input_dim": _predictor.input_dim,
+            "sequence_length": _predictor.sequence_length,
+            "vocabulary_version": "BDSLW131-v1",
+        }
 
     return {
         "status": overall_status,
         "process_alive": True,
         "backend_initialized": True,
-        "mediapipe_available": mediapipe_ready,
-        "trained_model_loaded": model_ready,
-        "inference_ready": model_ready,
+        "websocket_available": True,
+        "mediapipe_asset_present": asset_present,
+        "mediapipe_initialized": mediapipe_initialized,
+        "mediapipe_available": mediapipe_initialized,
+        "trained_model_loaded": model_loaded,
+        "checkpoint_compatible": checkpoint_compatible,
+        "inference_ready": inference_ready,
         "checkpoint_path": getattr(_predictor, "checkpoint_path", None) if _predictor else None,
+        "model_info": model_info_dict,
+        "last_extraction_error": _extractor_error,
+        "last_model_error": _init_error,
         "error": _init_error,
         "mediapipe_error": _extractor_error,
     }
@@ -377,15 +415,24 @@ def run_robustness_experiment(request: RobustnessExperimentRequest) -> dict[str,
 
 
 class SessionState:
-    def __init__(self, seq_len: int):
+    def __init__(self, seq_len: int, min_valid_frames: int | None = None):
         import collections
         import time
-        self.seq_len = seq_len
+        self.seq_len = max(1, seq_len)
         self.mode = "guided"
         self.confidence_threshold = 0.28
         self.debounce_frames = 2
         self.pause_threshold_sec = 0.5
-        self.min_sequence_frames = 10
+
+        # Eliminate sequence-length contradiction:
+        # Static models (seq_len == 1) require exactly 1 frame.
+        if self.seq_len == 1:
+            self.min_sequence_frames = 1
+        else:
+            self.min_sequence_frames = min(
+                self.seq_len,
+                max(1, min_valid_frames if min_valid_frames is not None else min(10, self.seq_len)),
+            )
 
         self.sequence_buffer: collections.deque = collections.deque(maxlen=self.seq_len)
         self.mask_buffer: collections.deque = collections.deque(maxlen=self.seq_len)
@@ -401,14 +448,16 @@ class SessionState:
         self.current_confidence = 0.0
         self.last_committed_word = None
 
-        # continuous mode specific
-        self.continuous_candidate_history = collections.deque(maxlen=5) # longer hysteresis for continuous
+        # Continuous mode specific
+        self.continuous_candidate_history = collections.deque(maxlen=5)
         self.continuous_cooldown_frames = 0
         self.continuous_last_emitted = None
 
         self.state = "WAITING"
         self.last_hand_activity_time = time.time()
         self.frame_counter = 0
+        self.processed_frames_count = 0
+        self.extraction_error_count = 0
         self.start_time = time.time()
 
     def update_config(self, payload: dict):
@@ -418,12 +467,15 @@ class SessionState:
         if "confidence_threshold" in payload:
             self.confidence_threshold = float(payload["confidence_threshold"])
         if "debounce_frames" in payload:
-            self.debounce_frames = max(2, int(payload["debounce_frames"]))
+            self.debounce_frames = max(1, int(payload["debounce_frames"]))
             self.candidate_history = collections.deque(
                 list(self.candidate_history), maxlen=self.debounce_frames
             )
         if "pause_threshold_sec" in payload:
             self.pause_threshold_sec = float(payload["pause_threshold_sec"])
+        if "min_sequence_frames" in payload:
+            req_frames = int(payload["min_sequence_frames"])
+            self.min_sequence_frames = min(self.seq_len, max(1, req_frames))
 
     def full_reset(self):
         self.sequence_buffer.clear()
@@ -464,14 +516,21 @@ class SessionState:
 
 
 def _resolve_word_bilingual(word: str | None, predictor: RealTimePredictor | None) -> tuple[str | None, str | None]:
-    if not word or predictor is None or getattr(predictor, "bdsl_vocab", None) is None:
+    if not word or predictor is None:
         return word, word
+    vocab = getattr(predictor, "bdsl_vocab", None)
+    if vocab is None or not hasattr(vocab, "get_id_by_label"):
+        return str(word), str(word)
     try:
-        cid = predictor.bdsl_vocab.get_id_by_label(word)
-        item = predictor.bdsl_vocab.get_by_id(cid)
-        return item.get("bengali_label", word), item.get("english_gloss", word)
+        cid = vocab.get_id_by_label(word)
+        item = vocab.get_by_id(cid)
+        if isinstance(item, dict):
+            b_val = item.get("bengali_label")
+            e_val = item.get("english_gloss")
+            return str(b_val) if b_val is not None else str(word), str(e_val) if e_val is not None else str(word)
+        return str(word), str(word)
     except Exception:
-        return word, word
+        return str(word), str(word)
 
 
 @app.websocket("/ws/live")
@@ -485,14 +544,16 @@ async def websocket_live_recognition(websocket: WebSocket) -> None:
     extractor = _extractor
 
     model_ready = predictor is not None and getattr(predictor, "model", None) is not None
-    extractor_ready = extractor is not None
+    extractor_ready = extractor is not None and getattr(extractor, "_landmarker", None) is not None
 
-    seq_len = predictor.sequence_length if predictor else 64
+    seq_len = predictor.sequence_length if predictor else 1
     raw_dim = (
         predictor.input_dim // 3
         if (predictor and predictor.input_dim >= 4977)
         else (predictor.input_dim if predictor else 1659)
     )
+
+    s = SessionState(seq_len)
 
     await websocket.send_json({
         "type": "session_started",
@@ -501,6 +562,7 @@ async def websocket_live_recognition(websocket: WebSocket) -> None:
         "model_name": predictor.config.model.name if predictor else None,
         "num_classes": predictor.num_classes if predictor else 0,
         "sequence_length": seq_len,
+        "min_sequence_frames": s.min_sequence_frames,
         "feature_dim": raw_dim,
         "mediapipe_ready": extractor_ready,
         "active_mode": "guided",
@@ -509,12 +571,20 @@ async def websocket_live_recognition(websocket: WebSocket) -> None:
         "vocabulary_version": "BDSLW131-v1",
     })
 
-    s = SessionState(seq_len)
-
     try:
         while True:
             message = await websocket.receive()
             now = time.time()
+
+            # Handle disconnect message cleanly before trying to read message content
+            if message.get("type") == "websocket.disconnect":
+                logger.info("Client disconnect received for session %s", session_id)
+                break
+
+            frame_id = s.frame_counter + 1
+            ts_ms = int(now * 1000)
+            frame = None
+
             if message.get("text"):
                 try:
                     payload = json.loads(message["text"])
@@ -537,6 +607,7 @@ async def websocket_live_recognition(websocket: WebSocket) -> None:
                         "confidence_threshold": s.confidence_threshold,
                         "debounce_frames": s.debounce_frames,
                         "pause_threshold_sec": s.pause_threshold_sec,
+                        "min_sequence_frames": s.min_sequence_frames,
                     })
                     continue
                 elif msg_type == "confirm_word":
@@ -577,9 +648,17 @@ async def websocket_live_recognition(websocket: WebSocket) -> None:
                     await websocket.send_json({"type": "reset_ack"})
                     continue
                 elif msg_type == "frame":
+                    frame_id = payload.get("frame_id", s.frame_counter + 1)
+                    ts_ms = payload.get("timestamp_ms", int(now * 1000))
                     frame_data = payload.get("data", "")
-                    ts_ms = payload.get("timestamp_ms", int(time.time() * 1000))
                     if not frame_data:
+                        await websocket.send_json({
+                            "type": "frame_processed",
+                            "frame_id": frame_id,
+                            "timestamp_ms": ts_ms,
+                            "processing_ms": 0.0,
+                            "success": False,
+                        })
                         continue
                     if "," in frame_data:
                         frame_data = frame_data.split(",", 1)[1]
@@ -588,29 +667,69 @@ async def websocket_live_recognition(websocket: WebSocket) -> None:
                         img_arr = np.frombuffer(img_bytes, dtype=np.uint8)
                         frame = cv2.imdecode(img_arr, cv2.IMREAD_COLOR)
                     except Exception as exc:
-                        await websocket.send_json({"type": "warning", "message": f"Frame decode error: {exc}"})
+                        await websocket.send_json({
+                            "type": "warning",
+                            "frame_id": frame_id,
+                            "message": f"Frame decode error: {exc}",
+                        })
+                        await websocket.send_json({
+                            "type": "frame_processed",
+                            "frame_id": frame_id,
+                            "timestamp_ms": ts_ms,
+                            "processing_ms": 0.0,
+                            "success": False,
+                        })
                         continue
                     if frame is None:
+                        await websocket.send_json({
+                            "type": "frame_processed",
+                            "frame_id": frame_id,
+                            "timestamp_ms": ts_ms,
+                            "processing_ms": 0.0,
+                            "success": False,
+                        })
                         continue
                 else:
                     continue
             elif message.get("bytes"):
-                ts_ms = int(time.time() * 1000)
+                frame_id = s.frame_counter + 1
+                ts_ms = int(now * 1000)
                 try:
                     img_arr = np.frombuffer(message["bytes"], dtype=np.uint8)
                     frame = cv2.imdecode(img_arr, cv2.IMREAD_COLOR)
                 except Exception as exc:
-                    await websocket.send_json({"type": "warning", "message": f"Binary decode error: {exc}"})
+                    await websocket.send_json({
+                        "type": "warning",
+                        "frame_id": frame_id,
+                        "message": f"Binary decode error: {exc}",
+                    })
+                    await websocket.send_json({
+                        "type": "frame_processed",
+                        "frame_id": frame_id,
+                        "timestamp_ms": ts_ms,
+                        "processing_ms": 0.0,
+                        "success": False,
+                    })
                     continue
                 if frame is None:
+                    await websocket.send_json({
+                        "type": "frame_processed",
+                        "frame_id": frame_id,
+                        "timestamp_ms": ts_ms,
+                        "processing_ms": 0.0,
+                        "success": False,
+                    })
                     continue
             else:
                 continue
 
             s.frame_counter += 1
+            t0 = time.perf_counter()
+
             if extractor is None:
                 await websocket.send_json({
                     "type": "landmarks_status",
+                    "frame_id": frame_id,
                     "hands_detected": False,
                     "left_hand": False,
                     "right_hand": False,
@@ -618,14 +737,37 @@ async def websocket_live_recognition(websocket: WebSocket) -> None:
                     "face": False,
                     "valid_points": 0,
                     "error": "MediaPipe unavailable.",
+                    "timestamp_ms": ts_ms,
+                })
+                await websocket.send_json({
+                    "type": "frame_processed",
+                    "frame_id": frame_id,
+                    "timestamp_ms": ts_ms,
+                    "processing_ms": 0.0,
+                    "success": False,
                 })
                 continue
 
-            t0 = time.perf_counter()
             try:
                 structured = extractor.extract_structured_frame(frame, timestamp_ms=int(ts_ms))
-            except Exception:
+            except Exception as exc:
+                s.extraction_error_count += 1
+                logger.warning("MediaPipe extraction error on frame %s: %s", frame_id, exc)
+                await websocket.send_json({
+                    "type": "extraction_error",
+                    "frame_id": frame_id,
+                    "message": f"Landmark extraction failure: {exc}",
+                    "timestamp_ms": ts_ms,
+                })
+                await websocket.send_json({
+                    "type": "frame_processed",
+                    "frame_id": frame_id,
+                    "timestamp_ms": ts_ms,
+                    "processing_ms": round((time.perf_counter() - t0) * 1000.0, 2),
+                    "success": False,
+                })
                 continue
+
             extraction_ms = (time.perf_counter() - t0) * 1000.0
 
             selected_modalities = ["left_hand", "right_hand"]
@@ -657,10 +799,14 @@ async def websocket_live_recognition(websocket: WebSocket) -> None:
             hands_present = left_hand or right_hand
             valid_points = int(mask.sum())
 
+            # Real bounding boxes computed from valid landmark coordinates
+            left_box = compute_landmark_bounding_box(coords[:21], mask[:21])
+            right_box = compute_landmark_bounding_box(coords[21:42], mask[21:42])
+
             left_pts = [{"x": float(coords[i, 0]), "y": float(coords[i, 1]), "z": float(coords[i, 2]), "valid": bool(mask[i] > 0)} for i in range(21)]
             right_pts = [{"x": float(coords[i, 0]), "y": float(coords[i, 1]), "z": float(coords[i, 2]), "valid": bool(mask[i] > 0)} for i in range(21, 42)]
 
-            # Simple Quality Coach
+            # Quality Coach
             coach_score = 100
             if not hands_present:
                 coach_score -= 60
@@ -680,12 +826,16 @@ async def websocket_live_recognition(websocket: WebSocket) -> None:
 
             await websocket.send_json({
                 "type": "hand_landmarks",
+                "frame_id": frame_id,
                 "left_landmarks": left_pts,
                 "right_landmarks": right_pts,
-                "left_box": None, "right_box": None,
+                "left_box": left_box,
+                "right_box": right_box,
                 "hands_detected": hands_present,
-                "left_hand": left_hand, "right_hand": right_hand,
-                "pose": pose, "face": face,
+                "left_hand": left_hand,
+                "right_hand": right_hand,
+                "pose": pose,
+                "face": face,
                 "valid_points": valid_points,
                 "quality": {"score": max(5, coach_score), "buffer_completeness": buf_completeness},
                 "state_code": state_code,
@@ -710,152 +860,150 @@ async def websocket_live_recognition(websocket: WebSocket) -> None:
                 if (now - s.last_hand_activity_time) > s.pause_threshold_sec:
                     s.handle_neutral_pause()
 
-            if predictor is None:
-                continue
-
             inference_ms = 0.0
 
-            # Speed logic
-            if hands_present:
-                wrist_pos = None
-                if right_hand and mask[21] > 0:
-                    wrist_pos = (coords[21, 0], coords[21, 1])
-                elif left_hand and mask[0] > 0:
-                    wrist_pos = (coords[0, 0], coords[0, 1])
-                if wrist_pos:
-                    s.wrist_history.append(wrist_pos)
-                    if len(s.wrist_history) >= 2:
-                        s.speed_history.append(float(np.hypot(s.wrist_history[-1][0]-s.wrist_history[-2][0], s.wrist_history[-1][1]-s.wrist_history[-2][1])))
-
-            avg_speed = float(np.mean(s.speed_history)) if s.speed_history else 0.0
-            is_moving = avg_speed >= 0.007
-
-            if hands_present:
-                if len(s.sequence_buffer) < s.min_sequence_frames:
-                    continue
-                if not is_moving and s.current_candidate is None:
-                    continue
-
-                # Inference
-                seq_array = np.stack(list(s.sequence_buffer))
-                mask_array = np.stack(list(s.mask_buffer))
-
-                # Cooldown logic for continuous mode
-                if s.mode == "continuous" and s.continuous_cooldown_frames > 0:
-                    s.continuous_cooldown_frames -= 1
-                    continue
-
-                t1 = time.perf_counter()
-                try:
-                    pred_res = predictor.predict_label(
-                        seq_array, mask=mask_array, confidence_threshold=s.confidence_threshold, calibrate=True, calibration_alpha=0.85
-                    )
-                except Exception:
-                    continue
-                inference_ms = (time.perf_counter() - t1) * 1000.0
-
-                pred_label = pred_res["predicted_label"]
-                conf = pred_res["confidence"]
-                meets_threshold = pred_res["meets_threshold"]
-
-                bengali_label = pred_res.get("bengali_label", pred_label)
-                english_gloss = pred_res.get("english_gloss", pred_label)
-                translit = pred_res.get("transliteration", "")
-
-                await websocket.send_json({
-                    "type": "live_prediction",
-                    "predicted_label": pred_label,
-                    "bengali_label": bengali_label,
-                    "english_gloss": english_gloss,
-                    "transliteration": translit,
-                    "predicted_class": pred_res.get("predicted_class"),
-                    "confidence": conf,
-                    "meets_threshold": meets_threshold,
-                    "top_k": pred_res.get("top_k", []),
-                    "state": s.state,
-                    "state_code": state_code,
-                    "is_provisional": True,
-                    "latency_ms": round(extraction_ms + inference_ms, 1),
-                })
-
-                if s.mode == "guided":
-                    if meets_threshold and pred_label not in {"Unknown (Low Confidence)", "Model Unavailable"}:
-                        s.candidate_history.append(pred_label)
-                        most_common, count = collections.Counter(s.candidate_history).most_common(1)[0]
-                        s.current_candidate = most_common
-                        s.current_confidence = conf
-                        progress = min(1.0, count / s.debounce_frames)
-                        b_cand, e_cand = _resolve_word_bilingual(s.current_candidate, predictor)
-                        await websocket.send_json({
-                            "type": "word_candidate",
-                            "word": s.current_candidate,
-                            "bengali_word": b_cand,
-                            "english_gloss": e_cand,
-                            "confidence": s.current_confidence,
-                            "stability_count": count,
-                            "target_count": s.debounce_frames,
-                            "progress": progress,
-                        })
-                        if count >= s.debounce_frames and s.state != "COMMITTED":
-                            is_new_word = s.current_candidate != s.last_committed_word
-                            is_new_gesture = (now - s.last_hand_activity_time) < 0.2
-                            if is_new_word or is_new_gesture:
-                                b_comm, e_comm = _resolve_word_bilingual(s.current_candidate, predictor)
-                                await websocket.send_json({
-                                    "type": "word_committed",
-                                    "token_id": str(uuid.uuid4())[:8],
-                                    "word": s.current_candidate,
-                                    "bengali_word": b_comm,
-                                    "english_gloss": e_comm,
-                                    "confidence": s.current_confidence,
-                                    "timestamp": time.time(),
-                                    "mode": "guided",
-                                })
-                                s.transition_to_committed(s.current_candidate)
+            # Only run inference if hands are present and model is loaded
+            if hands_present and predictor is not None:
+                if len(s.sequence_buffer) >= s.min_sequence_frames:
+                    # Cooldown logic for continuous mode
+                    if s.mode == "continuous" and s.continuous_cooldown_frames > 0:
+                        s.continuous_cooldown_frames -= 1
                     else:
-                        if s.state != "COMMITTED":
-                            await websocket.send_json({
-                                "type": "word_candidate",
-                                "word": None,
-                                "bengali_word": None,
-                                "english_gloss": None,
-                                "confidence": conf,
-                                "stability_count": 0,
-                                "target_count": s.debounce_frames,
-                                "progress": 0.0,
-                            })
-                elif s.mode == "continuous":
-                    if meets_threshold and pred_label not in {"Unknown (Low Confidence)", "Model Unavailable"}:
-                        s.continuous_candidate_history.append(pred_label)
-                        if len(s.continuous_candidate_history) == s.continuous_candidate_history.maxlen:
-                            # Requires the same label to be predicted consistently across the history buffer
-                            most_common, count = collections.Counter(s.continuous_candidate_history).most_common(1)[0]
-                            # Confirm if it's stable and different from the last emitted word (or a new gesture phase)
-                            if count >= 4 and most_common != s.continuous_last_emitted:
-                                b_comm, e_comm = _resolve_word_bilingual(most_common, predictor)
-                                await websocket.send_json({
-                                    "type": "word_committed",
-                                    "token_id": str(uuid.uuid4())[:8],
-                                    "word": most_common,
-                                    "bengali_word": b_comm,
-                                    "english_gloss": e_comm,
-                                    "confidence": conf,
-                                    "timestamp": time.time(),
-                                    "mode": "continuous",
-                                    "source": "auto_continuous",
-                                })
-                                s.continuous_last_emitted = most_common
-                                s.continuous_cooldown_frames = 15  # Wait a few frames before recognizing the next sign
-                                s.continuous_candidate_history.clear()
-                                # Clear rolling sequence buffers to prevent stale frames leaking into the next sign prediction
-                                s.sequence_buffer.clear()
-                                s.mask_buffer.clear()
+                        seq_array = np.stack(list(s.sequence_buffer))
+                        mask_array = np.stack(list(s.mask_buffer))
 
-            if s.frame_counter % 5 == 0:
+                        t1 = time.perf_counter()
+                        try:
+                            pred_res = predictor.predict_label(
+                                seq_array,
+                                mask=mask_array,
+                                confidence_threshold=s.confidence_threshold,
+                                calibrate=True,
+                                calibration_alpha=0.85,
+                            )
+                        except Exception as exc:
+                            logger.warning("Predictor inference error on frame %s: %s", frame_id, exc)
+                            pred_res = None
+
+                        if pred_res is not None:
+                            inference_ms = (time.perf_counter() - t1) * 1000.0
+                            pred_label = pred_res["predicted_label"]
+                            conf = pred_res["confidence"]
+                            meets_threshold = pred_res["meets_threshold"]
+
+                            bengali_label = pred_res.get("bengali_label", pred_label)
+                            english_gloss = pred_res.get("english_gloss", pred_label)
+                            translit = pred_res.get("transliteration", "")
+
+                            await websocket.send_json({
+                                "type": "live_prediction",
+                                "frame_id": frame_id,
+                                "predicted_label": pred_label,
+                                "bengali_label": bengali_label,
+                                "english_gloss": english_gloss,
+                                "transliteration": translit,
+                                "predicted_class": pred_res.get("predicted_class"),
+                                "confidence": conf,
+                                "meets_threshold": meets_threshold,
+                                "top_k": pred_res.get("top_k", []),
+                                "state": s.state,
+                                "state_code": state_code,
+                                "is_provisional": True,
+                                "latency_ms": round(extraction_ms + inference_ms, 1),
+                            })
+
+                            if s.mode == "guided":
+                                if meets_threshold and pred_label not in {"Unknown (Low Confidence)", "Model Unavailable"}:
+                                    s.candidate_history.append(pred_label)
+                                    most_common, count = collections.Counter(s.candidate_history).most_common(1)[0]
+                                    s.current_candidate = most_common
+                                    s.current_confidence = conf
+                                    progress = min(1.0, count / s.debounce_frames)
+                                    b_cand, e_cand = _resolve_word_bilingual(s.current_candidate, predictor)
+                                    await websocket.send_json({
+                                        "type": "word_candidate",
+                                        "frame_id": frame_id,
+                                        "word": s.current_candidate,
+                                        "bengali_word": b_cand,
+                                        "english_gloss": e_cand,
+                                        "confidence": s.current_confidence,
+                                        "stability_count": count,
+                                        "target_count": s.debounce_frames,
+                                        "progress": progress,
+                                    })
+                                    if count >= s.debounce_frames and s.state != "COMMITTED":
+                                        is_new_word = s.current_candidate != s.last_committed_word
+                                        is_new_gesture = (now - s.last_hand_activity_time) < 0.2
+                                        if is_new_word or is_new_gesture:
+                                            b_comm, e_comm = _resolve_word_bilingual(s.current_candidate, predictor)
+                                            await websocket.send_json({
+                                                "type": "word_committed",
+                                                "frame_id": frame_id,
+                                                "token_id": str(uuid.uuid4())[:8],
+                                                "word": s.current_candidate,
+                                                "bengali_word": b_comm,
+                                                "english_gloss": e_comm,
+                                                "confidence": s.current_confidence,
+                                                "timestamp": time.time(),
+                                                "mode": "guided",
+                                            })
+                                            s.transition_to_committed(s.current_candidate)
+                                else:
+                                    if s.state != "COMMITTED":
+                                        await websocket.send_json({
+                                            "type": "word_candidate",
+                                            "frame_id": frame_id,
+                                            "word": None,
+                                            "bengali_word": None,
+                                            "english_gloss": None,
+                                            "confidence": conf,
+                                            "stability_count": 0,
+                                            "target_count": s.debounce_frames,
+                                            "progress": 0.0,
+                                        })
+                            elif s.mode == "continuous":
+                                if meets_threshold and pred_label not in {"Unknown (Low Confidence)", "Model Unavailable"}:
+                                    s.continuous_candidate_history.append(pred_label)
+                                    if len(s.continuous_candidate_history) == s.continuous_candidate_history.maxlen:
+                                        most_common, count = collections.Counter(s.continuous_candidate_history).most_common(1)[0]
+                                        if count >= 4 and most_common != s.continuous_last_emitted:
+                                            b_comm, e_comm = _resolve_word_bilingual(most_common, predictor)
+                                            await websocket.send_json({
+                                                "type": "word_committed",
+                                                "frame_id": frame_id,
+                                                "token_id": str(uuid.uuid4())[:8],
+                                                "word": most_common,
+                                                "bengali_word": b_comm,
+                                                "english_gloss": e_comm,
+                                                "confidence": conf,
+                                                "timestamp": time.time(),
+                                                "mode": "continuous",
+                                                "source": "auto_continuous",
+                                            })
+                                            s.continuous_last_emitted = most_common
+                                            s.continuous_cooldown_frames = 15
+                                            s.continuous_candidate_history.clear()
+                                            s.sequence_buffer.clear()
+                                            s.mask_buffer.clear()
+
+            s.processed_frames_count += 1
+            total_processing_ms = (time.perf_counter() - t0) * 1000.0
+
+            # Send final frame acknowledgement for this frame
+            await websocket.send_json({
+                "type": "frame_processed",
+                "frame_id": frame_id,
+                "timestamp_ms": ts_ms,
+                "processing_ms": round(total_processing_ms, 2),
+                "success": True,
+            })
+
+            if s.processed_frames_count % 5 == 0:
                 elapsed = max(1e-3, now - s.start_time)
                 await websocket.send_json({
                     "type": "performance",
-                    "fps": round(s.frame_counter / elapsed, 1),
+                    "frame_id": frame_id,
+                    "fps": round(s.processed_frames_count / elapsed, 1),
                     "extraction_ms": round(extraction_ms, 1),
                     "inference_ms": round(inference_ms, 1),
                     "total_latency_ms": round(extraction_ms + inference_ms, 1),

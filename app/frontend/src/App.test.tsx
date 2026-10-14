@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import React from 'react';
 import { Header } from './components/Header';
+import { CameraPanel } from './components/CameraPanel';
 import { LiveRecognitionPanel } from './components/LiveRecognitionPanel';
 import { HandQualityCoach } from './components/HandQualityCoach';
 import { PostureInspector } from './components/PostureInspector';
@@ -338,5 +339,88 @@ describe('SignFlow Frontend Suite', () => {
     expect(screen.getByText('Recognition & App Settings')).toBeDefined();
     expect(screen.getByText('45%')).toBeDefined();
     expect(screen.getByText('5 frames')).toBeDefined();
+  });
+
+  it('renders CameraPanel tracking chips reflecting landmark validity and bounding boxes', () => {
+    const validLandmarks: LandmarkPoint[] = Array.from({ length: 21 }, () => ({
+      x: 0.5,
+      y: 0.5,
+      z: 0.0,
+      valid: true,
+    }));
+
+    render(
+      <CameraPanel
+        onFrameCaptured={vi.fn()}
+        lastProcessedFrameId={1}
+        isStreaming={true}
+        setIsStreaming={vi.fn()}
+        landmarksStatus={{
+          hands_detected: true,
+          left_hand: true,
+          right_hand: false,
+          pose: true,
+          face: false,
+          valid_points: 21,
+        }}
+        leftLandmarks={validLandmarks}
+        rightLandmarks={[]}
+        leftBox={{ xmin: 0.2, ymin: 0.2, xmax: 0.5, ymax: 0.5, width: 0.3, height: 0.3 }}
+        rightBox={null}
+        quality={null}
+        stateCode="STATE_C_COLLECTING"
+        candidateWord={null}
+        performance={{
+          fps: 15,
+          extraction_ms: 12,
+          inference_ms: 4,
+          total_latency_ms: 16,
+          frame_count: 50,
+        }}
+        targetFps={15}
+        mirrorCamera={true}
+        onToggleMirror={vi.fn()}
+      />
+    );
+
+    expect(screen.getByText('Live Camera Workspace')).toBeDefined();
+    expect(screen.getAllByText(/Start Camera/i).length).toBeGreaterThan(0);
+  });
+
+  it('renders LiveRecognitionPanel in uncertain and model-unavailable states correctly', () => {
+    const { rerender } = render(
+      <LiveRecognitionPanel
+        prediction={{
+          predicted_label: 'LOW_CONF',
+          confidence: 0.12,
+          meets_threshold: false,
+          latency_ms: 10,
+          top_k: [],
+          state: 'UNCERTAIN',
+        }}
+        candidate={null}
+        mode="guided"
+        stateCode="STATE_F_UNCERTAIN"
+        onConfirmWord={vi.fn()}
+        onRejectCandidate={vi.fn()}
+        confidenceThreshold={0.4}
+      />
+    );
+
+    expect(screen.getAllByText(/Sign Uncertain/i).length).toBeGreaterThan(0);
+
+    rerender(
+      <LiveRecognitionPanel
+        prediction={null}
+        candidate={null}
+        mode="continuous"
+        stateCode="STATE_G_MODEL_UNAVAILABLE"
+        onConfirmWord={vi.fn()}
+        onRejectCandidate={vi.fn()}
+        confidenceThreshold={0.4}
+      />
+    );
+
+    expect(screen.getByText(/Recognition Model Unavailable/i)).toBeDefined();
   });
 });

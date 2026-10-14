@@ -7,10 +7,11 @@
 - **Canonical Python Package**: `src/sign_language/` (installed in editable mode)
 - **Python Environment**: Python 3.14.7, PyTorch 2.14.1+cpu, MediaPipe 1.0.1, OpenCV 5.0.0.93, Scikit-learn 1.9.1
 - **Node Environment**: Node v24.19.0, npm 11.17.0
-- **Backend Test Suite**: **72 / 72 passed** (`python -m pytest tests/ -v`), 100% test pass rate
-- **Frontend Test Suite**: **10 / 10 passed** (`npm.cmd test -- --run`) in `app/frontend`
+- **Backend Test Suite**: **79 / 79 passed** (`python -m pytest tests/ -q`), 100% test pass rate
+- **Frontend Test Suite**: **12 / 12 passed** (`npm.cmd test -- --run`) in `app/frontend`
 - **Frontend Production Build**: `tsc && vite build` compiled cleanly to `app/frontend/dist`
 - **Linter Status**: **100% clean** (`python -m ruff check src scripts tests` passed with 0 errors)
+- **Real-Time Recognition Status**: **Fully Repaired & Verified** (Single-frame buffer contradiction resolved, motion gate removed, hand tracking chips & focus viewport functional, monotonic frame_id ack protocol active)
 - **Target Dataset**: BDSLW131 (29,930 still images across 131 classes in `data/raw/bangla-sign-dataset/`, aliased to `data/raw/bdslw131/`)
 
 ---

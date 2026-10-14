@@ -142,13 +142,33 @@ FastAPI serves both the backend API and the compiled React production frontend:
 
 ---
 
-## 8. Running Automated Tests
+## 8. Verifying Hand Detection with Standalone Diagnostic
+
+Before running the full web interface, verify that MediaPipe detects your hands independently:
 
 ```powershell
-# Backend tests
-python -m pytest tests/test_bdslw131_pipeline.py tests/test_api.py -v
+# Live webcam preview with hand skeleton and bounding boxes (press Q to exit):
+python scripts/diagnose_detection.py --source 0
 
-# Frontend tests
+# Single image test without GUI:
+python scripts/diagnose_detection.py --image path/to/sample.jpg --no-gui
+```
+
+---
+
+## 9. Running Automated Tests
+
+```powershell
+# Run all backend regression and repair tests (79 tests)
+python -m pytest tests/ -v
+
+# Run real-time recognition repair regression suite
+python -m pytest tests/test_realtime_repair.py -v
+
+# Run frontend Vitest test suite (12 tests)
 cd app/frontend
 npm.cmd test -- --run
+
+# Compile frontend production bundle & typecheck
+npm.cmd run build
 ```
