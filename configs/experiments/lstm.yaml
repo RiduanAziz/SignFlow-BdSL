@@ -1,0 +1,5 @@
+model:
+  name: lstm
+  input_dim: 4977
+  hidden_dim: 64
+  bidirectional: true

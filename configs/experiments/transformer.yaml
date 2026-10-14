@@ -1,0 +1,6 @@
+model:
+  name: transformer
+  embedding_dim: 64
+  num_heads: 4
+  num_layers: 2
+  ff_dim: 128

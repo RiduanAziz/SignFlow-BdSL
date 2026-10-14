@@ -1,0 +1,4 @@
+robustness:
+  noise_type: coordinate_jitter
+  severities: [0.1, 0.2, 0.3]
+  seed: 42

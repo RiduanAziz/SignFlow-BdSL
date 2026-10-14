@@ -1,0 +1,4 @@
+robustness:
+  noise_type: frame_drop
+  severities: [0.1, 0.2, 0.3]
+  seed: 42

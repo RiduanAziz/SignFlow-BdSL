@@ -1,0 +1,4 @@
+model:
+  name: gru
+  hidden_dim: 64
+  bidirectional: true

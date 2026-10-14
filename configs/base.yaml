@@ -1,0 +1,23 @@
+seed: 42
+project_name: sign-language-recognition
+log_level: INFO
+training:
+  epochs: 100
+  batch_size: 32
+  learning_rate: 0.001
+  weight_decay: 0.0001
+  gradient_clip: 1.0
+model:
+  name: robust_holistic_fusion
+  input_dim: 1659
+  num_classes: 100
+  hidden_dim: 128
+  embedding_dim: 64
+  num_layers: 1
+  dropout: 0.2
+checkpoint_dir: checkpoints
+results_dir: results
+evaluation:
+  validation_split: validation
+  test_split: test
+  primary_metric: macro_f1

@@ -1,0 +1,6 @@
+robustness:
+  spatial_noise_type: coordinate_jitter
+  temporal_noise_type: frame_drop
+  spatial_severities: [0.1, 0.2, 0.3]
+  temporal_severities: [0.1, 0.2, 0.3]
+  seed: 42

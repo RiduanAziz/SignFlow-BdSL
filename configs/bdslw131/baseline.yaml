@@ -1,0 +1,24 @@
+project_name: signflow-bdsl
+seed: 42
+checkpoint_dir: checkpoints/bdslw131
+results_dir: results/bdslw131
+
+model:
+  name: baseline
+  input_dim: 1659
+  num_classes: 131
+  hidden_dim: 256
+  sequence_length: 1
+  dropout: 0.1
+
+training:
+  epochs: 20
+  batch_size: 64
+  learning_rate: 0.001
+  weight_decay: 0.0001
+  gradient_clip: 1.0
+
+evaluation:
+  validation_split: validation
+  test_split: test
+  primary_metric: macro_f1
